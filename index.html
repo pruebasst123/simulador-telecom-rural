@@ -87,6 +87,11 @@
 
                 <!-- Acciones Rápidas -->
                 <div class="flex items-center gap-2.5 flex-wrap">
+                    <button id="btn-record-video" onclick="toggleScreenRecording()" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer" title="Grabar pantalla para evidencias audiovisuales">
+                        <span id="rec-dot" class="w-2.5 h-2.5 rounded-full bg-white"></span>
+                        <span id="rec-btn-text">Grabar Evidencia</span>
+                        <span id="rec-timer" class="hidden font-mono text-xs bg-rose-900/80 px-1.5 py-0.5 rounded">00:00</span>
+                    </button>
                     <button id="btn-run-24h" onclick="runFull24HourSimulation(true)" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-play"></i>
                         <span>Ejecutar Ciclo 24h</span>
@@ -200,58 +205,231 @@
             </div>
         </section>
 
-        <!-- SECCIÓN 2: SIMULACIÓN VISUAL ANIMADA (REGISTRO AUDIOVISUAL / CANVAS EN TIEMPO REAL) -->
+        <!-- NUEVA SECCIÓN: LABORATORIO DE NAVEGACIÓN DEL USUARIO (CLIENT QoE SANDBOX) -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                    <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-diagram-project text-emerald-600"></i>
-                        2. Simulación Audiovisual en Tiempo Real: Flujo de Información y Energía
-                    </h2>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
-                        Representación dinámica de paquetes IP (Backhaul Satelital LEO → Gateway QoS → Mesh 802.11ax) y balance energético Off-Grid 24V.
-                    </p>
-                </div>
-                
-                <!-- Control de Hora Inspeccionada y Alertas -->
-                <div class="flex items-center gap-3 bg-slate-900 text-white px-3.5 py-2 rounded-xl">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-regular fa-clock text-amber-400"></i>
-                        <span class="text-xs text-slate-300">Hora Simulada:</span>
-                        <select id="hour-inspector" onchange="inspectSpecificHour(parseInt(this.value))" class="bg-slate-800 text-amber-300 font-mono text-xs font-bold rounded-lg px-2 py-1 border border-slate-700 cursor-pointer">
-                            <!-- Opciones 00:00 a 23:00 llenadas por JS -->
-                        </select>
+            <div class="p-5 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-slate-900 via-slate-850 to-blue-950 text-white">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-400/30 rounded">Client QoE Sandbox • Prueba de Campo</span>
+                            <span id="sandbox-hour-badge" class="px-2 py-0.5 text-[10px] font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-400/30 rounded">Condiciones Hora 12:00</span>
+                        </div>
+                        <h2 class="text-base sm:text-lg font-bold flex items-center gap-2">
+                            <i class="fa-solid fa-laptop-medical text-sky-400"></i>
+                            Banco de Pruebas de Navegación del Cliente (Experiencia Real en Sitio)
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-300 mt-0.5">
+                            Emule la conexión de un equipo comunitario al nodo Wi-Fi Mesh IEEE 802.11ax y experimente la calidad real de videollamadas, descargas y trazas ICMP bajo las condiciones configuradas.
+                        </p>
                     </div>
-                    <button id="btn-toggle-anim" onclick="toggleAnimationPlay()" class="text-xs bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 text-emerald-400 font-semibold cursor-pointer" title="Pausar/Reanudar flujo visual">
-                        <i id="icon-anim-play" class="fa-solid fa-pause"></i>
-                    </button>
+
+                    <!-- Resumen Instantáneo del Enlace del Cliente -->
+                    <div class="grid grid-cols-3 gap-2.5 bg-slate-950/70 border border-slate-700/80 p-3 rounded-xl font-mono text-xs shrink-0">
+                        <div>
+                            <div class="text-[10px] text-slate-400 uppercase">Señal RSSI</div>
+                            <div id="client-rssi-val" class="text-sm font-bold text-emerald-400">-58 dBm</div>
+                        </div>
+                        <div class="border-l border-slate-800 pl-2.5">
+                            <div class="text-[10px] text-slate-400 uppercase">Velocidad Real</div>
+                            <div id="client-eff-speed" class="text-sm font-bold text-sky-400">4.85 Mbps</div>
+                        </div>
+                        <div class="border-l border-slate-800 pl-2.5">
+                            <div class="text-[10px] text-slate-400 uppercase">Latencia / Pérd.</div>
+                            <div id="client-rtt-loss" class="text-sm font-bold text-amber-300">29ms / 0.2%</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Banner de Alertas de Desvío Dinámico -->
-            <div id="deviation-alert-banner" class="bg-emerald-50 border-b border-emerald-200 px-5 py-2.5 flex items-center justify-between gap-3 transition-colors">
-                <div class="flex items-center gap-2.5">
-                    <span id="alert-badge" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-                    <p id="alert-message" class="text-xs sm:text-sm font-medium text-emerald-900">
-                        Sistema operando dentro de los parámetros nominales del modelo conceptual. Sin desvíos críticos.
-                    </p>
+            <!-- Barra de Configuración Física del Cliente (Dispositivo + Distancia al Nodo Mesh) -->
+            <div class="p-5 bg-slate-50 border-b border-slate-200 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                <!-- Selector de Dispositivo -->
+                <div class="md:col-span-5">
+                    <label for="client-device-select" class="block text-xs font-bold text-slate-700 mb-1.5">
+                        <i class="fa-solid fa-desktop text-blue-600 mr-1"></i> Terminal de Usuario Conectada al Mesh:
+                    </label>
+                    <select id="client-device-select" onchange="updateClientLinkPhysics()" class="w-full bg-white border border-slate-300 text-slate-900 text-xs sm:text-sm font-medium rounded-xl p-2.5 focus:ring-blue-500 focus:border-blue-500 cursor-pointer">
+                        <option value="laptop_escuela">Laptop Aula Digital (Escuela Rural • Wi-Fi 6 2x2)</option>
+                        <option value="tablet_salud">Tablet Telemedicina (Puesto de Salud • Wi-Fi 6 1x1)</option>
+                        <option value="pc_comunitario">PC Punto Vive Digital / Trámites (Antena Externa CPE)</option>
+                    </select>
                 </div>
-                <span id="alert-timestamp" class="font-mono text-xs font-semibold text-emerald-700 hidden sm:inline">ESTADO: ÓPTIMO</span>
+
+                <!-- Control de Distancia al Nodo Wi-Fi Mesh -->
+                <div class="md:col-span-7">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <label for="slider-mesh-distance" class="text-xs font-bold text-slate-700">
+                            <i class="fa-solid fa-tower-broadcast text-emerald-600 mr-1"></i> Distancia Física al Nodo Wi-Fi Mesh Outdoor (IEEE 802.11ax):
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <span id="val-mesh-distance" class="font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800">25 m (Línea de Vista)</span>
+                        </div>
+                    </div>
+                    <input id="slider-mesh-distance" type="range" min="5" max="180" step="5" value="25" oninput="updateClientLinkPhysics()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[11px] text-slate-500 font-mono mt-1">
+                        <span>5m (Óptimo)</span>
+                        <span>60m (Cobertura Media)</span>
+                        <span>120m (Borde Celda)</span>
+                        <span>180m (Atenuación Crítica)</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Contenedor Responsivo del Canvas -->
-            <div class="relative w-full bg-slate-950" style="height: 410px;">
-                <canvas id="architectureCanvas" class="w-full h-full block"></canvas>
-                
-                <!-- Leyenda flotante minimalista -->
-                <div class="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-                    <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-lg flex items-center gap-4 text-[11px] text-slate-300">
-                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Flujo Datos DL/UL (Ku/Ka & 802.11ax)</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Generación Solar MPPT</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Suministro Banco 24V DC</span>
+            <!-- Pestañas de Aplicaciones Simuladas -->
+            <div class="border-b border-slate-200 bg-white px-5 pt-3 flex gap-2 overflow-x-auto">
+                <button id="tab-btn-video" onclick="switchSandboxTab('video')" class="px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 whitespace-nowrap cursor-pointer">
+                    <i class="fa-solid fa-video"></i> 1. Videollamada (Telemedicina / Clase)
+                </button>
+                <button id="tab-btn-download" onclick="switchSandboxTab('download')" class="px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap cursor-pointer">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> 2. Descarga Web y Recursos Educativos
+                </button>
+                <button id="tab-btn-ping" onclick="switchSandboxTab('ping')" class="px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap cursor-pointer">
+                    <i class="fa-solid fa-terminal"></i> 3. Consola Ping & Diagnóstico (Tabla 10)
+                </button>
+            </div>
+
+            <!-- Contenido de Pestañas del Sandbox -->
+            <div class="p-5 sm:p-6">
+                <!-- PESTAÑA 1: TEST DE VIDEOLLAMADA ADAPTATIVA -->
+                <div id="sandbox-panel-video" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    <div class="lg:col-span-7 relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shadow-inner" style="height: 290px;">
+                        <canvas id="videoCallCanvas" class="w-full h-full block"></canvas>
+                        <!-- Overlay superior de calidad adaptativa -->
+                        <div class="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                            <span id="video-quality-badge" class="px-2.5 py-1 rounded-md bg-emerald-600/90 text-white font-mono text-xs font-bold shadow">
+                                HD 1080p • 30 FPS
+                            </span>
+                            <span id="video-codec-badge" class="px-2.5 py-1 rounded-md bg-slate-900/85 text-slate-200 font-mono text-[11px] border border-slate-700">
+                                WebRTC Opus/VP9 • Jitter: 4.2 ms
+                            </span>
+                        </div>
+                        <!-- Overlay inferior de estado -->
+                        <div id="video-buffering-overlay" class="hidden absolute inset-0 bg-slate-950/75 backdrop-blur-xs flex flex-col items-center justify-center text-white p-4 text-center">
+                            <i class="fa-solid fa-spinner fa-spin text-3xl text-amber-400 mb-2"></i>
+                            <div class="font-bold text-sm">Re-almacenando búfer (Congestión / Pérdida de Paquetes)...</div>
+                            <div class="text-xs text-slate-300 mt-1">Reduciendo bitrate adaptativo para mantener audio estable.</div>
+                        </div>
                     </div>
-                    <div id="canvas-live-metrics" class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-lg font-mono text-[11px] text-sky-300">
-                        LEO: 185.0 Mbps | Carga: 163 W | Bat: 25.4V (92%)
+
+                    <div class="lg:col-span-5 space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Telemetría QoE de Videoconferencia</h4>
+                            <div class="space-y-2.5 text-xs">
+                                <div class="flex justify-between py-1 border-b border-slate-200/70">
+                                    <span class="text-slate-600">Resolución Adaptativa (ABR):</span>
+                                    <span id="qoe-video-res" class="font-mono font-bold text-slate-900">1920x1080 (Full HD)</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-slate-200/70">
+                                    <span class="text-slate-600">Bitrate Asignado por Gateway:</span>
+                                    <span id="qoe-video-bitrate" class="font-mono font-bold text-blue-700">4.20 Mbps</span>
+                                </div>
+                                <div class="flex justify-between py-1 border-b border-slate-200/70">
+                                    <span class="text-slate-600">Jitter (Variación de Retardo):</span>
+                                    <span id="qoe-video-jitter" class="font-mono font-bold text-slate-900">4.2 ms</span>
+                                </div>
+                                <div class="flex justify-between py-1">
+                                    <span class="text-slate-600">Calificación MOS (1.0 - 5.0):</span>
+                                    <span id="qoe-video-mos" class="font-mono font-bold text-emerald-700">4.4 / 5.0 (Excelente)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="qoe-video-diagnosis" class="text-xs text-slate-600 bg-blue-50/70 border border-blue-100 p-3 rounded-xl leading-relaxed">
+                            Con la velocidad efectiva actual, el enlace soporta clases virtuales sincrónicas y teleconsulta médica con video fluido sin cortes de audio.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA 2: SIMULADOR DE DESCARGA WEB Y RECURSOS -->
+                <div id="sandbox-panel-download" class="hidden space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button onclick="startSimulatedDownload('Guía Pedagógica Ciencias (PDF)', 4.5)" class="p-4 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/40 transition text-left cursor-pointer group">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="px-2 py-0.5 text-[10px] font-bold bg-blue-100 text-blue-800 rounded">EDUCACIÓN</span>
+                                <span class="font-mono text-xs font-bold text-slate-500">4.5 MB</span>
+                            </div>
+                            <div class="font-bold text-sm text-slate-900 group-hover:text-blue-700">Guía Pedagógica Ciencias.pdf</div>
+                            <div class="text-xs text-slate-500 mt-1">Clic para iniciar descarga bajo QoS actual</div>
+                        </button>
+
+                        <button onclick="startSimulatedDownload('Historia Clínica & Radiografía', 1.2)" class="p-4 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition text-left cursor-pointer group">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 text-emerald-800 rounded">SALUD DIGITAL</span>
+                                <span class="font-mono text-xs font-bold text-slate-500">1.2 MB</span>
+                            </div>
+                            <div class="font-bold text-sm text-slate-900 group-hover:text-emerald-700">Historia Clínica & Rx.zip</div>
+                            <div class="text-xs text-slate-500 mt-1">Clic para transferir paquete médico</div>
+                        </button>
+
+                        <button onclick="startSimulatedDownload('Cápsula Video Clase Offline', 16.0)" class="p-4 rounded-xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50/40 transition text-left cursor-pointer group">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 rounded">MULTIMEDIA</span>
+                                <span class="font-mono text-xs font-bold text-slate-500">16.0 MB</span>
+                            </div>
+                            <div class="font-bold text-sm text-slate-900 group-hover:text-amber-700">Clase Grabada Matemáticas.mp4</div>
+                            <div class="text-xs text-slate-500 mt-1">Clic para evaluar descarga pesada</div>
+                        </button>
+                    </div>
+
+                    <!-- Barra de Progreso Realista -->
+                    <div class="bg-slate-900 text-white p-5 rounded-xl border border-slate-800">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <div>
+                                <div class="text-[11px] font-mono text-slate-400 uppercase">Transferencia HTTP/TLS Activa</div>
+                                <div id="dl-file-name" class="text-sm font-bold text-sky-300">Seleccione un recurso arriba para probar la descarga...</div>
+                            </div>
+                            <div class="font-mono text-xs text-right">
+                                <span id="dl-speed-live" class="text-emerald-400 font-bold text-sm">0.00 Mbps</span>
+                                <span id="dl-progress-mb" class="text-slate-400 ml-2">(0.0 / 0.0 MB)</span>
+                            </div>
+                        </div>
+
+                        <div class="w-full bg-slate-800 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-700">
+                            <div id="dl-progress-bar" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-150" style="width: 0%"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-3 border-t border-slate-800 font-mono text-xs">
+                            <div>
+                                <span class="text-slate-400">Tiempo Real Transcurrido:</span>
+                                <span id="dl-elapsed-time" class="text-white font-bold ml-1">0.0 s</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400">Tiempo Ideal a MIR (5.0 Mbps):</span>
+                                <span id="dl-ideal-time" class="text-emerald-400 font-bold ml-1">-- s</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400">Penalización por Red/Wi-Fi:</span>
+                                <span id="dl-overhead-pct" class="text-amber-400 font-bold ml-1">+0.0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PESTAÑA 3: CONSOLA DE DIAGNÓSTICO PING / TRACEROUTE -->
+                <div id="sandbox-panel-ping" class="hidden space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900 text-slate-200 px-4 py-2.5 rounded-t-xl border border-slate-800">
+                        <div class="flex items-center gap-2 font-mono text-xs">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            <span class="ml-2 text-slate-400">root@gateway-qos-rural:~# ping 8.8.8.8 (Verificación Tabla 10)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="btn-toggle-ping" onclick="togglePingConsole()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold rounded-lg cursor-pointer">
+                                Iniciar Ping Continuo
+                            </button>
+                            <button onclick="clearPingConsole()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-xs rounded-lg cursor-pointer">
+                                Limpiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="ping-terminal-output" class="bg-slate-950 text-emerald-400 font-mono text-xs p-4 rounded-b-xl border border-t-0 border-slate-800 h-60 overflow-y-auto space-y-1 leading-relaxed">
+                        <div class="text-slate-500"># Presione "Iniciar Ping Continuo" para ejecutar trazas ICMP desde el Gateway hacia DNS Global (8.8.8.8)...</div>
+                    </div>
+
+                    <div class="flex flex-wrap justify-between items-center text-xs font-mono text-slate-600 bg-slate-100 px-4 py-2 rounded-xl border border-slate-200">
+                        <span id="ping-stats-packets">Paquetes: Enviados = 0, Recibidos = 0, Perdidos = 0 (0.0% pérdida)</span>
+                        <span id="ping-stats-rtt">RTT Mín/Prom/Máx: -- / -- / -- ms</span>
                     </div>
                 </div>
             </div>
@@ -466,7 +644,15 @@
             inspectedHour: 12,
             isAnimating: true,
             hourlyData: [],
-            summaryMetrics: {}
+            summaryMetrics: {},
+            // Estado del Sandbox del Cliente
+            clientDevice: 'laptop_escuela',
+            meshDistanceM: 25,
+            clientRssiDbm: -58,
+            clientEffectiveMbps: 4.8,
+            clientRttMs: 29.0,
+            clientLossPct: 0.2,
+            activeSandboxTab: 'video'
         };
 
         // Instancias de gráficos Chart.js
@@ -782,6 +968,7 @@
             updateCharts();
             renderExperimentalTable();
             updateLiveAlertBanner();
+            updateClientLinkPhysics();
 
             if (notify) {
                 showToast('Simulación experimental de 24 horas ejecutada y tabulada.', 'success');
@@ -834,20 +1021,21 @@
                     title: 'Consumo Energético Diario (Ed)',
                     icon: 'fa-bolt',
                     theoretical: '3,912 Wh/día (163 W)',
-                    experimental: `${Math.round(m.totalConsWh).toLocaleString('es-CO')} Wh/día`,
-                    deviation: `${m.devConsumptionPct >= 0 ? '+' : ''}${m.devConsumptionPct.toFixed(1)}% desvío`,
-                    isGood: Math.abs(m.devConsumptionPct) <= 10.0,
-                    detail: 'Varía por modulación RF y nodos Mesh activos.'
-                },
-                {
-                    title: 'Autonomía Banco Baterías 24V',
-                    icon: 'fa-battery-three-quarters',
-                    theoretical: '≥ 24.0 h sin sol',
-                    experimental: `${m.autonomyHours.toFixed(1)} h (${m.finalSocPct.toFixed(0)}% SoC)`,
-                    deviation: `${m.devAutonomyPct >= 0 ? '+' : ''}${m.devAutonomyPct.toFixed(1)}% margen`,
-                    isGood: m.autonomyHours >= CONCEPTUAL_MODEL.kpiAutonomyTargetH,
-                    detail: `Generación FV: ${Math.round(m.totalGenWh).toLocaleString('es-CO')} Wh (${m.devGenerationPct >= 0 ? '+' : ''}${m.devGenerationPct.toFixed(1)}% vs diseño).`
-                }
+        function inspectSpecificHour(hour) {
+            simState.inspectedHour = hour;
+            document.getElementById('sandbox-hour-badge').textContent = `Condiciones Hora ${String(hour).padStart(2, '0')}:00`;
+            updateLiveAlertBanner();
+            updateClientLinkPhysics();
+        }
+
+        function selectRowHour(hour) {
+            simState.inspectedHour = hour;
+            document.getElementById('hour-inspector').value = hour;
+            document.getElementById('sandbox-hour-badge').textContent = `Condiciones Hora ${String(hour).padStart(2, '0')}:00`;
+            updateLiveAlertBanner();
+            updateClientLinkPhysics();
+            showToast(`Inspeccionando telemetría de las ${String(hour).padStart(2, '0')}:00 en el diagrama y en el cliente.`, 'info');
+        }
             ];
 
             const grid = document.getElementById('kpi-cards-grid');
@@ -1486,7 +1674,400 @@
         }
 
         // =========================================================================
-        // 11. INICIALIZACIÓN AL CARGAR LA VENTANA
+        // 11. BANCO DE PRUEBAS DE NAVEGACIÓN DEL CLIENTE (CLIENT QoE SANDBOX)
+        // =========================================================================
+        function switchSandboxTab(tabName) {
+            simState.activeSandboxTab = tabName;
+            const tabs = ['video', 'download', 'ping'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const panel = document.getElementById(`sandbox-panel-${t}`);
+                if (t === tabName) {
+                    btn.className = 'px-4 py-2.5 text-xs sm:text-sm font-bold border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 whitespace-nowrap cursor-pointer';
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.className = 'px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 whitespace-nowrap cursor-pointer';
+                    panel.classList.add('hidden');
+                }
+            });
+            if (tabName === 'video') {
+                resizeVideoCallCanvas();
+            }
+        }
+
+        function updateClientLinkPhysics() {
+            const devEl = document.getElementById('client-device-select');
+            const distEl = document.getElementById('slider-mesh-distance');
+            if (!devEl || !distEl) return;
+
+            simState.clientDevice = devEl.value;
+            simState.meshDistanceM = parseInt(distEl.value, 10);
+
+            // Ganancia de antena según dispositivo cliente
+            const deviceGainDb = {
+                laptop_escuela: 0,
+                tablet_salud: -3.5,
+                pc_comunitario: 5.5
+            }[simState.clientDevice] || 0;
+
+            // Penalización adicional si hay un nodo Mesh caído (3/4 nodos)
+            const faultPenaltyDb = simState.activeMeshNodes === 3 ? -7.5 : 0;
+
+            // Modelo logarítmico de pérdida de trayectoria en entorno rural (2.4/5 GHz IEEE 802.11ax)
+            const pathLossDb = 40 + 27 * Math.log10(Math.max(5, simState.meshDistanceM));
+            const rssiDbm = Math.round(-12 - pathLossDb + deviceGainDb + faultPenaltyDb);
+            simState.clientRssiDbm = Math.max(-92, Math.min(-35, rssiDbm));
+
+            // Capacidad física local Wi-Fi 802.11ax según RSSI
+            let wifiPhyCapMbps = 120.0;
+            if (simState.clientRssiDbm < -82) wifiPhyCapMbps = 1.1;
+            else if (simState.clientRssiDbm < -75) wifiPhyCapMbps = 3.2;
+            else if (simState.clientRssiDbm < -68) wifiPhyCapMbps = 14.0;
+            else if (simState.clientRssiDbm < -60) wifiPhyCapMbps = 48.0;
+
+            // Obtener condiciones de la hora inspeccionada del Gateway QoS
+            const row = simState.hourlyData[simState.inspectedHour] || {
+                throughputPerUserMbps: 4.8,
+                rttMs: 28.5,
+                packetLossPct: 0.2
+            };
+
+            // Cuello de botella real: el mínimo entre lo que entrega el Gateway QoS y el enlace Wi-Fi local
+            const effectiveMbps = Math.min(row.throughputPerUserMbps, wifiPhyCapMbps);
+            const extraWifiRtt = simState.clientRssiDbm < -72 ? Math.pow(Math.abs(simState.clientRssiDbm + 72), 1.45) * 1.4 : 1.2;
+            const extraWifiLoss = simState.clientRssiDbm < -75 ? (Math.abs(simState.clientRssiDbm + 75) * 0.28) : 0.05;
+
+            simState.clientEffectiveMbps = Number(effectiveMbps.toFixed(2));
+            simState.clientRttMs = Number((row.rttMs + extraWifiRtt).toFixed(1));
+            simState.clientLossPct = Number(Math.min(25, row.packetLossPct + extraWifiLoss).toFixed(2));
+
+            // Actualizar etiquetas UI
+            const distBadge = document.getElementById('val-mesh-distance');
+            let distLabel = `${simState.meshDistanceM} m (Óptimo)`;
+            let distClass = 'font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800';
+            if (simState.meshDistanceM > 120) {
+                distLabel = `${simState.meshDistanceM} m (Borde Crítico)`;
+                distClass = 'font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-800';
+            } else if (simState.meshDistanceM > 65) {
+                distLabel = `${simState.meshDistanceM} m (Atenuación Media)`;
+                distClass = 'font-mono text-xs font-bold px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800';
+            }
+            distBadge.textContent = distLabel;
+            distBadge.className = distClass;
+
+            const rssiEl = document.getElementById('client-rssi-val');
+            rssiEl.textContent = `${simState.clientRssiDbm} dBm`;
+            rssiEl.className = simState.clientRssiDbm >= -68 ? 'text-sm font-bold text-emerald-400' : (simState.clientRssiDbm >= -78 ? 'text-sm font-bold text-amber-400' : 'text-sm font-bold text-rose-400');
+
+            document.getElementById('client-eff-speed').textContent = `${simState.clientEffectiveMbps.toFixed(2)} Mbps`;
+            document.getElementById('client-rtt-loss').textContent = `${simState.clientRttMs}ms / ${simState.clientLossPct}%`;
+
+            updateVideoCallTelemetry();
+        }
+
+        // --- MÓDULO 1: VIDEOLLAMADA ADAPTATIVA ---
+        function updateVideoCallTelemetry() {
+            const mbps = simState.clientEffectiveMbps;
+            const rtt = simState.clientRttMs;
+            const loss = simState.clientLossPct;
+            const jitter = Number((2.5 + (rtt * 0.12) + (loss * 3.8)).toFixed(1));
+
+            let resLabel = 'HD 1080p • 30 FPS';
+            let resFull = '1920x1080 (Full HD)';
+            let badgeClass = 'px-2.5 py-1 rounded-md bg-emerald-600/90 text-white font-mono text-xs font-bold shadow';
+            let mos = 4.4;
+            let diag = 'Con la velocidad efectiva actual, el enlace soporta clases virtuales sincrónicas y teleconsulta médica con video fluido sin cortes de audio.';
+
+            if (mbps < 0.9 || loss > 3.5) {
+                resLabel = 'AUDIO / 240p • 10 FPS';
+                resFull = '426x240 (Modo Emergencia)';
+                badgeClass = 'px-2.5 py-1 rounded-md bg-rose-600/90 text-white font-mono text-xs font-bold shadow';
+                mos = 2.1;
+                diag = 'Degradación severa por cuello de botella Wi-Fi/Satelital: se recomienda apagar cámara y mantener solo canal de voz.';
+            } else if (mbps < 1.8 || rtt > 45 || loss > 1.2) {
+                resLabel = 'SD 480p • 20 FPS';
+                resFull = '854x480 (Calidad Estándar)';
+                badgeClass = 'px-2.5 py-1 rounded-md bg-amber-600/90 text-white font-mono text-xs font-bold shadow';
+                mos = 3.3;
+                diag = 'El algoritmo ABR redujo la resolución a 480p para compensar la latencia/congestión y evitar congelamiento en la clase o consulta.';
+            } else if (mbps < 3.4) {
+                resLabel = 'HD 720p • 25 FPS';
+                resFull = '1280x720 (HD Optimizado)';
+                badgeClass = 'px-2.5 py-1 rounded-md bg-blue-600/90 text-white font-mono text-xs font-bold shadow';
+                mos = 3.9;
+                diag = 'Operación estable dentro de la política QoS (entre CIR 1.25 Mbps y MIR 5.0 Mbps). Videollamada fluida.';
+            }
+
+            document.getElementById('video-quality-badge').textContent = resLabel;
+            document.getElementById('video-quality-badge').className = badgeClass;
+            document.getElementById('video-codec-badge').textContent = `WebRTC Opus/VP9 • Jitter: ${jitter} ms`;
+            document.getElementById('qoe-video-res').textContent = resFull;
+            document.getElementById('qoe-video-bitrate').textContent = `${Math.min(mbps * 0.88, 4.4).toFixed(2)} Mbps`;
+            document.getElementById('qoe-video-jitter').textContent = `${jitter} ms`;
+
+            const mosEl = document.getElementById('qoe-video-mos');
+            mosEl.textContent = `${mos.toFixed(1)} / 5.0`;
+            mosEl.className = mos >= 3.8 ? 'font-mono font-bold text-emerald-700' : (mos >= 3.0 ? 'font-mono font-bold text-amber-600' : 'font-mono font-bold text-rose-600');
+            document.getElementById('qoe-video-diagnosis').textContent = diag;
+
+            const buffOverlay = document.getElementById('video-buffering-overlay');
+            if (loss > 2.5 || rtt > 58 || mbps < 0.8) {
+                buffOverlay.classList.remove('hidden');
+            } else {
+                buffOverlay.classList.add('hidden');
+            }
+        }
+
+        function resizeVideoCallCanvas() {
+            const c = document.getElementById('videoCallCanvas');
+            if (!c) return;
+            const rect = c.parentElement.getBoundingClientRect();
+            if (rect.width === 0) return;
+            const dpr = window.devicePixelRatio || 1;
+            c.width = rect.width * dpr;
+            c.height = rect.height * dpr;
+            c.getContext('2d').scale(dpr, dpr);
+        }
+
+        function drawVideoCallFrame() {
+            const c = document.getElementById('videoCallCanvas');
+            if (c && simState.activeSandboxTab === 'video') {
+                const ctx = c.getContext('2d');
+                const rect = c.parentElement.getBoundingClientRect();
+                const W = rect.width;
+                const H = rect.height;
+
+                if (W > 0 && H > 0) {
+                    // Fondo sala virtual
+                    const grad = ctx.createLinearGradient(0, 0, W, H);
+                    grad.addColorStop(0, '#0f172a');
+                    grad.addColorStop(1, '#1e293b');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, W, H);
+
+                    // Avatar docente / médico remoto en el centro
+                    const cx = W * 0.5;
+                    const cy = H * 0.46;
+                    ctx.fillStyle = '#334155';
+                    ctx.beginPath();
+                    ctx.arc(cx, cy - 16, 28, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(cx, cy + 48, 46, Math.PI, 0);
+                    ctx.fill();
+
+                    // Ondas de voz animadas
+                    const isStalled = simState.clientLossPct > 2.5 || simState.clientRttMs > 58;
+                    ctx.strokeStyle = isStalled ? '#f43f5e' : '#38bdf8';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    const waveY = H - 36;
+                    for (let x = 24; x < W - 24; x += 4) {
+                        const amp = isStalled ? 2 : (Math.sin(x * 0.05 + animTick * 0.18) * 12 * Math.sin(animTick * 0.09));
+                        const y = waveY + amp;
+                        if (x === 24) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+
+                    // Recuadro Picture-in-Picture (Equipo Local)
+                    ctx.fillStyle = '#090e1a';
+                    ctx.strokeStyle = '#475569';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.roundRect(W - 118, H - 96, 104, 64, 8);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '10px JetBrains Mono, monospace';
+                    ctx.fillText('Sede Rural (Tx)', W - 108, H - 60);
+                }
+            }
+            requestAnimationFrame(drawVideoCallFrame);
+        }
+
+        // --- MÓDULO 2: SIMULADOR DE DESCARGA DE ARCHIVOS ---
+        let downloadInterval = null;
+
+        function startSimulatedDownload(fileName, sizeMB) {
+            if (downloadInterval) clearInterval(downloadInterval);
+
+            const totalMegabits = sizeMB * 8;
+            let downloadedMegabits = 0;
+            const startTime = performance.now();
+            const idealSeconds = totalMegabits / CONCEPTUAL_MODEL.mirMbps;
+
+            document.getElementById('dl-file-name').textContent = `Descargando: ${fileName} (${sizeMB.toFixed(1)} MB)`;
+            document.getElementById('dl-ideal-time').textContent = `${idealSeconds.toFixed(1)} s`;
+
+            downloadInterval = setInterval(() => {
+                // Velocidad real fluctuando levemente alrededor de clientEffectiveMbps con pérdida de paquetes
+                const lossPenalty = Math.max(0.4, 1 - (simState.clientLossPct / 100) * 3.5);
+                const jitterFactor = 0.92 + Math.random() * 0.16;
+                const currentMbps = Math.max(0.25, simState.clientEffectiveMbps * lossPenalty * jitterFactor);
+
+                // Paso de 100 ms (0.1 s)
+                downloadedMegabits += currentMbps * 0.1;
+                const elapsedSec = (performance.now() - startTime) / 1000;
+                const pct = Math.min(100, (downloadedMegabits / totalMegabits) * 100);
+                const currentMB = Math.min(sizeMB, downloadedMegabits / 8);
+
+                document.getElementById('dl-progress-bar').style.width = `${pct.toFixed(1)}%`;
+                document.getElementById('dl-speed-live').textContent = `${currentMbps.toFixed(2)} Mbps`;
+                document.getElementById('dl-progress-mb').textContent = `(${currentMB.toFixed(2)} / ${sizeMB.toFixed(1)} MB)`;
+                document.getElementById('dl-elapsed-time').textContent = `${elapsedSec.toFixed(1)} s`;
+
+                const overheadPct = ((elapsedSec - (idealSeconds * (pct / 100))) / Math.max(0.1, idealSeconds * (pct / 100))) * 100;
+                document.getElementById('dl-overhead-pct').textContent = `${overheadPct >= 0 ? '+' : ''}${overheadPct.toFixed(1)}%`;
+
+                if (downloadedMegabits >= totalMegabits) {
+                    clearInterval(downloadInterval);
+                    downloadInterval = null;
+                    document.getElementById('dl-file-name').textContent = `Completado: ${fileName} (${sizeMB.toFixed(1)} MB)`;
+                    showToast(`Descarga finalizada en ${elapsedSec.toFixed(1)}s (vs ${idealSeconds.toFixed(1)}s teórico MIR).`, 'success');
+                }
+            }, 100);
+        }
+
+        // --- MÓDULO 3: CONSOLA PING CONTINUO (TABLA 10) ---
+        let pingInterval = null;
+        let pingStats = { sent: 0, received: 0, rtts: [] };
+
+        function togglePingConsole() {
+            const btn = document.getElementById('btn-toggle-ping');
+            if (pingInterval) {
+                clearInterval(pingInterval);
+                pingInterval = null;
+                btn.textContent = 'Reanudar Ping';
+                btn.className = 'px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold rounded-lg cursor-pointer';
+            } else {
+                btn.textContent = 'Detener Ping';
+                btn.className = 'px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-mono text-xs font-bold rounded-lg cursor-pointer';
+                executeSinglePing();
+                pingInterval = setInterval(executeSinglePing, 950);
+            }
+        }
+
+        function clearPingConsole() {
+            pingStats = { sent: 0, received: 0, rtts: [] };
+            document.getElementById('ping-terminal-output').innerHTML = '<div class="text-slate-500"># Consola limpia. Listo para trazas ICMP hacia 8.8.8.8...</div>';
+            updatePingStatsFooter();
+        }
+
+        function executeSinglePing() {
+            const term = document.getElementById('ping-terminal-output');
+            pingStats.sent += 1;
+            const now = new Date().toTimeString().split(' ')[0];
+            const isLost = (Math.random() * 100) < simState.clientLossPct;
+
+            const line = document.createElement('div');
+            if (isLost) {
+                line.className = 'text-rose-400 font-semibold';
+                line.textContent = `[${now}] Request timed out for icmp_seq=${pingStats.sent} (Pérdida Ku/Ka o Mesh)`;
+            } else {
+                pingStats.received += 1;
+                const sampleRtt = Math.max(18.0, simState.clientRttMs + (Math.random() - 0.5) * 6.5);
+                pingStats.rtts.push(sampleRtt);
+                const isHigh = sampleRtt >= 40.0;
+                line.className = isHigh ? 'text-amber-300' : 'text-emerald-400';
+                line.textContent = `[${now}] 64 bytes from 8.8.8.8: icmp_seq=${pingStats.sent} ttl=115 time=${sampleRtt.toFixed(1)} ms ${isHigh ? '[>40ms KPI]' : ''}`;
+            }
+
+            term.appendChild(line);
+            term.scrollTop = term.scrollHeight;
+            updatePingStatsFooter();
+        }
+
+        function updatePingStatsFooter() {
+            const lost = pingStats.sent - pingStats.received;
+            const lossPct = pingStats.sent > 0 ? ((lost / pingStats.sent) * 100).toFixed(1) : '0.0';
+            document.getElementById('ping-stats-packets').textContent = `Paquetes: Enviados = ${pingStats.sent}, Recibidos = ${pingStats.received}, Perdidos = ${lost} (${lossPct}% pérdida)`;
+
+            if (pingStats.rtts.length > 0) {
+                const min = Math.min(...pingStats.rtts).toFixed(1);
+                const max = Math.max(...pingStats.rtts).toFixed(1);
+                const avg = (pingStats.rtts.reduce((a, b) => a + b, 0) / pingStats.rtts.length).toFixed(1);
+                document.getElementById('ping-stats-rtt').textContent = `RTT Mín/Prom/Máx: ${min} / ${avg} / ${max} ms`;
+            } else {
+                document.getElementById('ping-stats-rtt').textContent = 'RTT Mín/Prom/Máx: -- / -- / -- ms';
+            }
+        }
+
+        // =========================================================================
+        // 12. GRABADOR DE EVIDENCIAS AUDIOVISUALES (SCREEN RECORDER)
+        // =========================================================================
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recTimerInterval = null;
+        let recStartTime = 0;
+
+        async function toggleScreenRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                return;
+            }
+
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                    throw new Error('API de captura no disponible en este contexto.');
+                }
+
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { frameRate: 30 },
+                    audio: false
+                });
+
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    clearInterval(recTimerInterval);
+                    stream.getTracks().forEach(track => track.stop());
+
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `evidencia_audiovisual_simulacion_${simState.scenario}.webm`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    // Restaurar botón
+                    document.getElementById('rec-dot').className = 'w-2.5 h-2.5 rounded-full bg-white';
+                    document.getElementById('rec-btn-text').textContent = 'Grabar Evidencia';
+                    document.getElementById('rec-timer').classList.add('hidden');
+                    showToast('Video de evidencia experimental descargado (.webm).', 'success');
+                };
+
+                mediaRecorder.start();
+                recStartTime = Date.now();
+                document.getElementById('rec-dot').className = 'w-2.5 h-2.5 rounded-full bg-white animate-ping';
+                document.getElementById('rec-btn-text').textContent = 'Detener y Guardar';
+                const timerEl = document.getElementById('rec-timer');
+                timerEl.classList.remove('hidden');
+
+                recTimerInterval = setInterval(() => {
+                    const sec = Math.floor((Date.now() - recStartTime) / 1000);
+                    const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+                    const ss = String(sec % 60).padStart(2, '0');
+                    timerEl.textContent = `${mm}:${ss}`;
+                }, 1000);
+
+                showToast('Grabando pantalla experimental. Interactúe con los escenarios y detenga al finalizar.', 'info');
+            } catch (err) {
+                showToast('No se pudo iniciar la grabación de pantalla (permiso cancelado o restricción del navegador).', 'warning');
+            }
+        }
+
+        // =========================================================================
+        // 13. INICIALIZACIÓN AL CARGAR LA VENTANA
         // =========================================================================
         window.onload = function () {
             // Poblar selector de horas (00:00 a 23:00)
@@ -1502,8 +2083,13 @@
             initCharts();
             runFull24HourSimulation(false);
             resizeArchitectureCanvas();
-            window.addEventListener('resize', resizeArchitectureCanvas);
+            resizeVideoCallCanvas();
+            window.addEventListener('resize', () => {
+                resizeArchitectureCanvas();
+                resizeVideoCallCanvas();
+            });
             drawArchitectureFrame();
+            drawVideoCallFrame();
         };
     </script>
 </body>
