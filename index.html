@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio de Simulación | Arquitectura Híbrida de Telecomunicaciones Rurales</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome para iconografía técnica -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        slate: {
+                            850: '#172033',
+                            950: '#0a0f1c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilos personalizados para scrollbars y detalles de precisión técnica */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .math-formula {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            border-left: 4px solid #2563eb;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+        }
+        input[type="range"] {
+            accent-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-blue-600 selection:text-white">
+
+    <!-- Notificación Toast (Reemplazo seguro de alert()) -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Header Institucional / Técnico -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-inner shrink-0">
+                        <i class="fa-solid fa-satellite-dish text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="px-2 py-0.5 text-[11px] font-mono font-semibold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30 rounded-md">ODS 9 • Ingeniería Rural</span>
+                            <span class="px-2 py-0.5 text-[11px] font-mono font-semibold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 rounded-md">LEO + Mesh 802.11ax + FV Off-Grid</span>
+                        </div>
+                        <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white mt-0.5">
+                            Laboratorio Experimental: Sistema Híbrido de Telecomunicaciones Rurales
+                        </h1>
+                    </div>
+                </div>
+
+                <!-- Acciones Rápidas -->
+                <div class="flex items-center gap-2.5 flex-wrap">
+                    <button id="btn-run-24h" onclick="runFull24HourSimulation(true)" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-play"></i>
+                        <span>Ejecutar Ciclo 24h</span>
+                    </button>
+                    <button id="btn-export-csv" onclick="exportToCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-file-csv"></i>
+                        <span>Exportar Bitácora CSV</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- SECCIÓN 1: PANEL DE CONTROL DE PRUEBAS EXPERIMENTALES -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-blue-600"></i>
+                        1. Panel de Control de Pruebas Experimentales y Escenarios
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                        Configure las condiciones operativas, atmosféricas y de carga de red para evaluar el comportamiento real frente al diseño conceptual.
+                    </p>
+                </div>
+
+                <!-- Selector de Escenarios Predefinidos -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <label for="scenario-select" class="text-xs font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap">Escenario de Prueba:</label>
+                    <select id="scenario-select" onchange="applyScenario(this.value)" class="bg-slate-50 border border-slate-300 text-slate-900 text-sm font-medium rounded-xl focus:ring-blue-500 focus:border-blue-500 block p-2.5 min-w-[280px] cursor-pointer">
+                        <option value="nominal">1. Operación Nominal (Cielo Despejado, 4.5 HSP)</option>
+                        <option value="congestion">2. Alta Congestión Escolar/Comunitaria (40+ usuarios)</option>
+                        <option value="rain_fade">3. Lluvia Intensa / Atenuación Ku/Ka (Rain Fade)</option>
+                        <option value="low_solar">4. Nubosidad Crítica / Baja Irradiación (2.2 HSP)</option>
+                        <option value="mesh_fault">5. Falla de un Nodo Mesh Outdoor (Enrutamiento 3/4)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Controles Deslizantes en Tiempo Real -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pt-5">
+                <!-- Control 1: Usuarios Concurrentes -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="slider-users" class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-users text-blue-600"></i> Usuarios Concurrentes
+                        </label>
+                        <span id="val-users" class="font-mono text-sm font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">28 usr</span>
+                    </div>
+                    <input id="slider-users" type="range" min="1" max="50" value="28" oninput="handleManualControl()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[11px] text-slate-400 font-mono mt-1.5">
+                        <span>1 usr</span>
+                        <span class="text-blue-600 font-semibold">Diseño: 40</span>
+                        <span>50 usr</span>
+                    </div>
+                </div>
+
+                <!-- Control 2: Irradiación Solar (HSP) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="slider-hsp" class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-sun text-amber-500"></i> Irradiación Solar (HSP)
+                        </label>
+                        <span id="val-hsp" class="font-mono text-sm font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">4.5 HSP</span>
+                    </div>
+                    <input id="slider-hsp" type="range" min="1.0" max="6.5" step="0.1" value="4.5" oninput="handleManualControl()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[11px] text-slate-400 font-mono mt-1.5">
+                        <span>1.0 h</span>
+                        <span class="text-amber-600 font-semibold">Diseño: 4.5</span>
+                        <span>6.5 h</span>
+                    </div>
+                </div>
+
+                <!-- Control 3: Nubosidad / Atenuación Climática -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="slider-attenuation" class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-cloud-showers-heavy text-indigo-600"></i> Atenuación Ku/Ka
+                        </label>
+                        <span id="val-attenuation" class="font-mono text-sm font-bold px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">10%</span>
+                    </div>
+                    <input id="slider-attenuation" type="range" min="0" max="100" step="1" value="10" oninput="handleManualControl()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[11px] text-slate-400 font-mono mt-1.5">
+                        <span>0% (Despejado)</span>
+                        <span>50%</span>
+                        <span>100% (Tormenta)</span>
+                    </div>
+                </div>
+
+                <!-- Control 4: Estado de Nodos Mesh Outdoor -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 flex flex-col justify-between">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-wifi text-emerald-600"></i> Nodos Wi-Fi Mesh
+                        </span>
+                        <span id="val-mesh" class="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">4 / 4 Activos</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                        <button id="btn-mesh-4" onclick="setMeshNodes(4)" class="py-1.5 px-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow-sm transition cursor-pointer">
+                            4/4 Nominal
+                        </button>
+                        <button id="btn-mesh-3" onclick="setMeshNodes(3)" class="py-1.5 px-2 text-xs font-semibold rounded-lg bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 transition cursor-pointer">
+                            3/4 (1 Falla)
+                        </button>
+                    </div>
+                    <p id="mesh-status-desc" class="text-[11px] text-slate-500 mt-1.5">Topología malla completa (12W x 4 = 48W).</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: SIMULACIÓN VISUAL ANIMADA (REGISTRO AUDIOVISUAL / CANVAS EN TIEMPO REAL) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-diagram-project text-emerald-600"></i>
+                        2. Simulación Audiovisual en Tiempo Real: Flujo de Información y Energía
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                        Representación dinámica de paquetes IP (Backhaul Satelital LEO → Gateway QoS → Mesh 802.11ax) y balance energético Off-Grid 24V.
+                    </p>
+                </div>
+                
+                <!-- Control de Hora Inspeccionada y Alertas -->
+                <div class="flex items-center gap-3 bg-slate-900 text-white px-3.5 py-2 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-regular fa-clock text-amber-400"></i>
+                        <span class="text-xs text-slate-300">Hora Simulada:</span>
+                        <select id="hour-inspector" onchange="inspectSpecificHour(parseInt(this.value))" class="bg-slate-800 text-amber-300 font-mono text-xs font-bold rounded-lg px-2 py-1 border border-slate-700 cursor-pointer">
+                            <!-- Opciones 00:00 a 23:00 llenadas por JS -->
+                        </select>
+                    </div>
+                    <button id="btn-toggle-anim" onclick="toggleAnimationPlay()" class="text-xs bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 text-emerald-400 font-semibold cursor-pointer" title="Pausar/Reanudar flujo visual">
+                        <i id="icon-anim-play" class="fa-solid fa-pause"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Banner de Alertas de Desvío Dinámico -->
+            <div id="deviation-alert-banner" class="bg-emerald-50 border-b border-emerald-200 px-5 py-2.5 flex items-center justify-between gap-3 transition-colors">
+                <div class="flex items-center gap-2.5">
+                    <span id="alert-badge" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                    <p id="alert-message" class="text-xs sm:text-sm font-medium text-emerald-900">
+                        Sistema operando dentro de los parámetros nominales del modelo conceptual. Sin desvíos críticos.
+                    </p>
+                </div>
+                <span id="alert-timestamp" class="font-mono text-xs font-semibold text-emerald-700 hidden sm:inline">ESTADO: ÓPTIMO</span>
+            </div>
+
+            <!-- Contenedor Responsivo del Canvas -->
+            <div class="relative w-full bg-slate-950" style="height: 410px;">
+                <canvas id="architectureCanvas" class="w-full h-full block"></canvas>
+                
+                <!-- Leyenda flotante minimalista -->
+                <div class="absolute bottom-3 left-3 right-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+                    <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-lg flex items-center gap-4 text-[11px] text-slate-300">
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block"></span> Flujo Datos DL/UL (Ku/Ka & 802.11ax)</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Generación Solar MPPT</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Suministro Banco 24V DC</span>
+                    </div>
+                    <div id="canvas-live-metrics" class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-lg font-mono text-[11px] text-sky-300">
+                        LEO: 185.0 Mbps | Carga: 163 W | Bat: 25.4V (92%)
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: COMPARACIÓN MATEMÁTICA: MODELO CONCEPTUAL VS RESULTADOS SIMULADOS -->
+        <section class="space-y-4">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
+                <div class="mb-5">
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-square-root-variable text-blue-600"></i>
+                        3. Modelo Conceptual Matemático vs. Resultados Experimentales (Análisis de Desvíos)
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                        Contraste riguroso entre las ecuaciones de dimensionamiento teórico (Tablas 9 y 10) y los promedios/valores obtenidos en la prueba experimental.
+                    </p>
+                </div>
+
+                <!-- Ecuaciones Exactas de las Imágenes -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <!-- Ecuación 1: MIR -->
+                    <div class="math-formula p-4 rounded-xl border border-slate-200 shadow-xs">
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-blue-700 mb-1">1. Tasa Máxima (MIR)</div>
+                        <div class="text-xs sm:text-sm font-bold text-slate-900">MIR = 200 Mbps / 40 usr</div>
+                        <div class="text-base font-extrabold text-blue-600 mt-1">= 5.00 Mbps/usuario</div>
+                        <p class="text-[11px] font-sans text-slate-500 mt-1.5">Límite superior QoS por usuario para evitar acaparamiento.</p>
+                    </div>
+
+                    <!-- Ecuación 2: CIR -->
+                    <div class="math-formula p-4 rounded-xl border border-slate-200 shadow-xs" style="border-left-color: #059669;">
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mb-1">2. Tasa Comprometida (CIR)</div>
+                        <div class="text-xs sm:text-sm font-bold text-slate-900">CIR = 5.0 Mbps / 4 (Contención)</div>
+                        <div class="text-base font-extrabold text-emerald-600 mt-1">= 1.25 Mbps/usuario</div>
+                        <p class="text-[11px] font-sans text-slate-500 mt-1.5">Ancho de banda mínimo garantizado con contención 4:1.</p>
+                    </div>
+
+                    <!-- Ecuación 3: Consumo Diario Ed -->
+                    <div class="math-formula p-4 rounded-xl border border-slate-200 shadow-xs" style="border-left-color: #d97706;">
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-amber-700 mb-1">3. Consumo Diario (Ed)</div>
+                        <div class="text-xs sm:text-sm font-bold text-slate-900">Ed = 163 W × 24 h</div>
+                        <div class="text-base font-extrabold text-amber-600 mt-1">= 3,912 Wh/día (3.912 kWh)</div>
+                        <p class="text-[11px] font-sans text-slate-500 mt-1.5">LEO (100W) + Router (15W) + 4 Nodos Mesh (48W).</p>
+                    </div>
+
+                    <!-- Ecuación 4: Potencia Fotovoltaica P_FV -->
+                    <div class="math-formula p-4 rounded-xl border border-slate-200 shadow-xs" style="border-left-color: #7c3aed;">
+                        <div class="text-[11px] font-bold uppercase tracking-wider text-purple-700 mb-1">4. Generador FV (P_FV)</div>
+                        <div class="text-xs font-bold text-slate-900">P_FV = (3912 / (4.5×0.75)) × 1.25</div>
+                        <div class="text-base font-extrabold text-purple-600 mt-1">= 1,449 Wp (1.45 kWp)</div>
+                        <p class="text-[11px] font-sans text-slate-500 mt-1.5">Eficiencia η=0.75, margen de seguridad 25% y 4.5 HSP.</p>
+                    </div>
+                </div>
+
+                <!-- Tarjetas Comparativas de KPIs (Tabla 10 + Variables Críticas) -->
+                <div id="kpi-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Se renderizan dinámicamente con JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 4: GRÁFICOS DE DISPERSIÓN (SCATTER PLOTS) Y SERIES DE TIEMPO -->
+        <section class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Gráfico de Dispersión 1: Usuarios Concurrentes vs Ancho de Banda Efectivo -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-start justify-between gap-2 mb-3">
+                        <div>
+                            <span class="text-[11px] font-mono font-bold uppercase text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Dispersión Analítica I</span>
+                            <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1">
+                                Usuarios Concurrentes vs. Throughput Efectivo por Usuario (Mbps)
+                            </h3>
+                            <p class="text-xs text-slate-500">Contraste de muestras experimentales frente a límites teóricos MIR (5.0 Mbps) y CIR (1.25 Mbps).</p>
+                        </div>
+                    </div>
+                    <div class="relative h-72 w-full">
+                        <canvas id="scatterThroughputChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Dispersión 2: Atenuación Atmosférica / Carga vs Latencia RTT y Pérdida -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+                    <div class="flex items-start justify-between gap-2 mb-3">
+                        <div>
+                            <span class="text-[11px] font-mono font-bold uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Dispersión Analítica II</span>
+                            <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1">
+                                Atenuación Atmosférica & Carga vs. Latencia RTT (ms) y Pérdida (%)
+                            </h3>
+                            <p class="text-xs text-slate-500">Evaluación del umbral crítico de latencia satelital LEO (&lt; 40 ms) y pérdida de paquetes (&lt; 1%).</p>
+                        </div>
+                    </div>
+                    <div class="relative h-72 w-full">
+                        <canvas id="scatterLatencyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico de Evolución Energética (24 horas) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                        <span class="text-[11px] font-mono font-bold uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Balance Energético Off-Grid 24V</span>
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1">
+                            Evolución Horaria (24h): Generación FV (Wh), Consumo Equipos (Wh) y Estado de Carga Batería (SoC %)
+                        </h3>
+                        <p class="text-xs text-slate-500">
+                            Verificación de autonomía energética (≥ 24h sin sol) en banco de baterías 24V (Capacidad nominal 5,000 Wh / ~208 Ah).
+                        </p>
+                    </div>
+                    <div id="energy-summary-pill" class="font-mono text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200">
+                        Balance Neto 24h: +0 Wh
+                    </div>
+                </div>
+                <div class="relative h-80 w-full">
+                    <canvas id="energyEvolutionChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 5: TABLA MINUCIOSA DE DATOS RECOLECTADOS (24 HORAS) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-table text-slate-700"></i>
+                        5. Bitácora Técnica y Tabla de Muestras Experimentales (Ciclo 24 Horas)
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                        Registro horario detallado con cálculo puntual de desvío matemático (%) respecto al modelo conceptual teórico.
+                    </p>
+                </div>
+                <button onclick="exportToCSV()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 self-start sm:self-auto cursor-pointer">
+                    <i class="fa-solid fa-download"></i> Descargar Tabla (.CSV)
+                </button>
+            </div>
+
+            <div class="overflow-x-auto max-h-[520px]">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-100 sticky top-0 z-10 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                        <tr>
+                            <th class="py-3 px-3.5">Hora</th>
+                            <th class="py-3 px-3.5 text-right">Usuarios</th>
+                            <th class="py-3 px-3.5 text-right">Cap. LEO (Mbps)</th>
+                            <th class="py-3 px-3.5 text-right">Throughput/Usr</th>
+                            <th class="py-3 px-3.5 text-right">Latencia RTT</th>
+                            <th class="py-3 px-3.5 text-right">Pérdida Pkt</th>
+                            <th class="py-3 px-3.5 text-right">Gen. FV (Wh)</th>
+                            <th class="py-3 px-3.5 text-right">Consumo (Wh)</th>
+                            <th class="py-3 px-3.5 text-right">Batería 24V (SoC)</th>
+                            <th class="py-3 px-3.5 text-right">Desvío Throughput</th>
+                            <th class="py-3 px-3.5 text-center">Estado KPI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="experimental-table-body" class="divide-y divide-slate-100 text-xs font-mono text-slate-700">
+                        <!-- Filas generadas dinámicamente por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Técnico -->
+    <footer class="bg-slate-900 text-slate-400 border-t border-slate-800 mt-10 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <p>
+                <strong class="text-slate-200">Simulador Experimental de Ingeniería</strong> • Arquitectura Híbrida Satelital LEO + Mesh IEEE 802.11ax + FV Off-Grid (24V).
+            </p>
+            <p class="font-mono text-slate-500">
+                Modelo Base: Tabla 9 & Tabla 10 • MIR 5.0 Mbps | CIR 1.25 Mbps | Ed 3.912 kWh/día | P_FV 1.45 kWp
+            </p>
+        </div>
+    </footer>
+
+    <!-- LÓGICA DE SIMULACIÓN, MODELO MATEMÁTICO Y VISUALIZACIÓN -->
+    <script>
+        // =========================================================================
+        // 1. CONSTANTES DEL MODELO CONCEPTUAL TEÓRICO (EXTRAÍDAS DE LAS IMÁGENES)
+        // =========================================================================
+        const CONCEPTUAL_MODEL = {
+            leoDownlinkMaxMbps: 200.0,     // Tabla 9: 200 Mbps (DL)
+            leoUplinkMaxMbps: 25.0,        // Tabla 9: 25 Mbps (UL)
+            maxConcurrentUsers: 40,        // Tabla 9: 40 dispositivos
+            contentionRatio: 4,            // Tabla 9: 4:1
+            mirMbps: 5.0,                  // Ecuación: 200 Mbps / 40 usuarios = 5.0 Mbps/usuario
+            cirMbps: 1.25,                 // Ecuación: 5.0 Mbps / 4 = 1.25 Mbps/usuario
+            powerTerminalW: 100,           // Tabla 9: Terminal LEO 100W
+            powerRouterW: 15,              // Tabla 9: Router QoS 15W
+            powerMeshNodeW: 12,            // Tabla 9: 4 nodos Mesh * 12W c/u = 48W
+            totalNominalPowerW: 163,       // Tabla 9: 100 + 15 + 48 = 163 W
+            designHsp: 4.5,                // Tabla 9: 4.5 horas solares pico
+            dailyEnergyWh: 3912,           // Ecuación: 163 W * 24 h = 3912 Wh/día
+            systemEfficiency: 0.75,        // Ecuación: eta = 0.75
+            safetyMargin: 1.25,            // Ecuación: 25% margen (1.25)
+            pvPowerWp: 1449,               // Ecuación: (3912 / (4.5 * 0.75)) * 1.25 = 1449 Wp (1.45 kWp)
+            batteryNominalVoltage: 24.0,   // Subsistema FV: Banco de baterías a 24V
+            batteryCapacityWh: 5200,       // Dimensionado para >= 24h autonomía (3912 Wh / 0.75 DoD ≈ 5200 Wh)
+            kpiUptimeTarget: 98.0,         // Tabla 10: >= 98% mensual
+            kpiRttTargetMs: 40.0,          // Tabla 10: < 40 ms
+            kpiPacketLossTargetPct: 1.0,   // Tabla 10: < 1%
+            kpiAutonomyTargetH: 24.0       // Tabla 10: >= 24 horas sin sol
+        };
+
+        // =========================================================================
+        // 2. ESTADO GLOBAL DE LA SIMULACIÓN
+        // =========================================================================
+        let simState = {
+            scenario: 'nominal',
+            baseUsers: 28,
+            hsp: 4.5,
+            attenuationPct: 10,
+            activeMeshNodes: 4,
+            inspectedHour: 12,
+            isAnimating: true,
+            hourlyData: [],
+            summaryMetrics: {}
+        };
+
+        // Instancias de gráficos Chart.js
+        let scatterThroughputChart = null;
+        let scatterLatencyChart = null;
+        let energyEvolutionChart = null;
+
+        // =========================================================================
+        // 3. UTILIDADES DE INTERFAZ Y NOTIFICACIONES
+        // =========================================================================
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                info: 'bg-slate-900 text-white border-slate-700',
+                success: 'bg-emerald-700 text-white border-emerald-500',
+                warning: 'bg-amber-600 text-white border-amber-400'
+            };
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg border text-xs sm:text-sm font-medium flex items-center gap-2.5 transition-all duration-300 transform translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+            const icon = type === 'success' ? 'fa-circle-check' : (type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info');
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        // Generador pseudoaleatorio reproducible con semilla suave para realismo experimental
+        function pseudoRandom(seed) {
+            const x = Math.sin(seed * 9999.91) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // =========================================================================
+        // 4. CONFIGURACIÓN DE ESCENARIOS EXPERIMENTALES
+        // =========================================================================
+        function applyScenario(scenarioKey) {
+            simState.scenario = scenarioKey;
+            const scenarios = {
+                nominal: {
+                    users: 28,
+                    hsp: 4.5,
+                    attenuation: 8,
+                    meshNodes: 4,
+                    inspectedHour: 12,
+                    label: 'Operación Nominal (Cielo Despejado, 4.5 HSP)'
+                },
+                congestion: {
+                    users: 44,
+                    hsp: 4.6,
+                    attenuation: 14,
+                    meshNodes: 4,
+                    inspectedHour: 10,
+                    label: 'Alta Congestión Escolar/Comunitaria (Picos >40 usuarios)'
+                },
+                rain_fade: {
+                    users: 30,
+                    hsp: 2.8,
+                    attenuation: 72,
+                    meshNodes: 4,
+                    inspectedHour: 15,
+                    label: 'Lluvia Intensa / Atenuación Ku/Ka (Rain Fade)'
+                },
+                low_solar: {
+                    users: 26,
+                    hsp: 2.2,
+                    attenuation: 35,
+                    meshNodes: 4,
+                    inspectedHour: 22,
+                    label: 'Nubosidad Crítica / Baja Irradiación (2.2 HSP)'
+                },
+                mesh_fault: {
+                    users: 34,
+                    hsp: 4.3,
+                    attenuation: 15,
+                    meshNodes: 3,
+                    inspectedHour: 14,
+                    label: 'Falla de un Nodo Mesh Outdoor (Enrutamiento Dinámico 3/4)'
+                }
+            };
+
+            const cfg = scenarios[scenarioKey] || scenarios.nominal;
+            simState.baseUsers = cfg.users;
+            simState.hsp = cfg.hsp;
+            simState.attenuationPct = cfg.attenuation;
+            simState.activeMeshNodes = cfg.meshNodes;
+            simState.inspectedHour = cfg.inspectedHour;
+
+            // Actualizar controles visuales
+            document.getElementById('slider-users').value = cfg.users;
+            document.getElementById('slider-hsp').value = cfg.hsp;
+            document.getElementById('slider-attenuation').value = cfg.attenuation;
+            document.getElementById('hour-inspector').value = cfg.inspectedHour;
+            updateMeshButtonsUI(cfg.meshNodes);
+            updateSliderBadges();
+
+            runFull24HourSimulation(false);
+            showToast(`Escenario cargado: ${cfg.label}`, 'info');
+        }
+
+        function handleManualControl() {
+            simState.baseUsers = parseInt(document.getElementById('slider-users').value, 10);
+            simState.hsp = parseFloat(document.getElementById('slider-hsp').value);
+            simState.attenuationPct = parseInt(document.getElementById('slider-attenuation').value, 10);
+            updateSliderBadges();
+            runFull24HourSimulation(false);
+        }
+
+        function setMeshNodes(count) {
+            simState.activeMeshNodes = count;
+            updateMeshButtonsUI(count);
+            runFull24HourSimulation(false);
+            if (count === 3) {
+                showToast('Alerta: Nodo Mesh #3 desconectado. Enrutamiento dinámico 802.11ax activado.', 'warning');
+            }
+        }
+
+        function updateMeshButtonsUI(count) {
+            const btn4 = document.getElementById('btn-mesh-4');
+            const btn3 = document.getElementById('btn-mesh-3');
+            const badge = document.getElementById('val-mesh');
+            const desc = document.getElementById('mesh-status-desc');
+
+            if (count === 4) {
+                btn4.className = 'py-1.5 px-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow-sm transition cursor-pointer';
+                btn3.className = 'py-1.5 px-2 text-xs font-semibold rounded-lg bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 transition cursor-pointer';
+                badge.className = 'font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800';
+                badge.textContent = '4 / 4 Activos';
+                desc.textContent = 'Topología malla completa (12W × 4 = 48W).';
+            } else {
+                btn3.className = 'py-1.5 px-2 text-xs font-semibold rounded-lg bg-amber-600 text-white shadow-sm transition cursor-pointer';
+                btn4.className = 'py-1.5 px-2 text-xs font-semibold rounded-lg bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 transition cursor-pointer';
+                badge.className = 'font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800';
+                badge.textContent = '3 / 4 (1 Falla)';
+                desc.textContent = 'Redistribución de carga en 3 nodos (36W). +Salto Wi-Fi.';
+            }
+        }
+
+        function updateSliderBadges() {
+            document.getElementById('val-users').textContent = `${simState.baseUsers} usr`;
+            document.getElementById('val-hsp').textContent = `${simState.hsp.toFixed(1)} HSP`;
+            document.getElementById('val-attenuation').textContent = `${simState.attenuationPct}%`;
+        }
+
+        function inspectSpecificHour(hour) {
+            simState.inspectedHour = hour;
+            updateLiveAlertBanner();
+        }
+
+        // =========================================================================
+        // 5. MOTOR MATEMÁTICO DE SIMULACIÓN EXPERIMENTAL (24 HORAS)
+        // =========================================================================
+        function runFull24HourSimulation(notify = false) {
+            const hourlyProfile = [
+                0.15, 0.10, 0.08, 0.08, 0.12, 0.25, // 00h - 05h: Madrugada rural
+                0.45, 0.70, 0.92, 1.00, 1.05, 0.98, // 06h - 11h: Jornada escolar y puestos de salud
+                0.85, 0.90, 1.02, 0.96, 0.88, 0.82, // 12h - 17h: Tarde académica y comunitaria
+                0.95, 1.04, 0.90, 0.65, 0.40, 0.22  // 18h - 23h: Pico nocturno comunitario y descenso
+            ];
+
+            // Perfil solar normalizado (campana de irradiación entre 06:00 y 18:00, suma = 1.0)
+            const rawSolarCurve = [
+                0, 0, 0, 0, 0, 0,
+                0.02, 0.06, 0.10, 0.14, 0.16, 0.17,
+                0.15, 0.10, 0.06, 0.03, 0.01, 0,
+                0, 0, 0, 0, 0, 0
+            ];
+
+            const data = [];
+            // Estado inicial del banco de baterías de 24V (arranca al 85% SoC a las 00:00)
+            let batteryEnergyWh = CONCEPTUAL_MODEL.batteryCapacityWh * 0.85;
+            let totalGenWh = 0;
+            let totalConsWh = 0;
+            let sumThroughput = 0;
+            let sumRtt = 0;
+            let sumPacketLoss = 0;
+            let uptimeHours = 0;
+
+            for (let h = 0; h < 24; h++) {
+                const noise1 = (pseudoRandom(h + simState.baseUsers * 3) - 0.5) * 0.12;
+                const noise2 = (pseudoRandom(h * 7 + simState.attenuationPct) - 0.5);
+
+                // 1. Usuarios concurrentes en la hora h
+                let activeUsers = Math.max(1, Math.round(simState.baseUsers * hourlyProfile[h] * (1 + noise1)));
+                if (simState.scenario === 'congestion' && (h >= 9 && h <= 11 || h >= 18 && h <= 20)) {
+                    activeUsers = Math.min(50, Math.max(41, activeUsers + 4));
+                }
+
+                // 2. Capacidad LEO efectiva (Atenuación Ku/Ka no lineal por Rain Fade)
+                const attFactor = simState.attenuationPct / 100;
+                // En bandas Ku/Ka, lluvia intensa (>60%) degrada exponencialmente la relación señal/ruido
+                const rainDegradation = Math.pow(attFactor, 1.45) * 0.78;
+                const orbitalHandoverJitter = noise2 * 6.5; // Variación por cambio de satélite LEO
+                let effectiveLeoMbps = Math.max(18.0, CONCEPTUAL_MODEL.leoDownlinkMaxMbps * (1 - rainDegradation) + orbitalHandoverJitter);
+
+                // Limitación adicional si falla un nodo Mesh Outdoor (cuello de botella inalámbrico local)
+                const meshCapacityCapMbps = simState.activeMeshNodes === 4 ? 195.0 : 128.0;
+                const usableNetworkMbps = Math.min(effectiveLeoMbps, meshCapacityCapMbps);
+
+                // 3. Throughput por usuario aplicando reglas QoS (MIR = 5.0 Mbps, CIR = 1.25 Mbps)
+                const rawPerUserMbps = usableNetworkMbps / activeUsers;
+                // El Gateway QoS recorta el máximo a MIR (5.0 Mbps) con ligera sobrecarga de encabezado TCP/IP (~3%)
+                let throughputPerUserMbps = Math.min(CONCEPTUAL_MODEL.mirMbps * (0.98 + noise2 * 0.03), rawPerUserMbps * 0.96);
+                throughputPerUserMbps = Math.max(0.35, throughputPerUserMbps);
+
+                // 4. Latencia Promedio RTT (ms) -> Base LEO ~26ms + cola QoS + penalización lluvia + salto Mesh extra
+                const loadRatio = activeUsers / CONCEPTUAL_MODEL.maxConcurrentUsers;
+                const queueDelayMs = Math.pow(loadRatio, 1.8) * 9.5;
+                const rainDelayMs = Math.pow(attFactor, 1.7) * 28.0;
+                const meshHopPenaltyMs = simState.activeMeshNodes === 3 ? 6.8 : 1.5;
+                let rttMs = 24.5 + queueDelayMs + rainDelayMs + meshHopPenaltyMs + (noise2 * 2.4);
+                rttMs = Math.max(19.0, rttMs);
+
+                // 5. Pérdida de Paquetes (%)
+                let packetLossPct = 0.12 + (Math.pow(attFactor, 2.1) * 3.4) + (loadRatio > 1 ? (loadRatio - 1) * 2.2 : 0) + (simState.activeMeshNodes === 3 ? 0.35 : 0) + (noise2 * 0.08);
+                packetLossPct = Math.max(0.02, packetLossPct);
+
+                // 6. Consumo Energético Horario (Wh)
+                // Base: Terminal LEO (100W) + Router (15W) + Nodos activos (12W c/u) + modulación dinámica por tráfico
+                const activeMeshPowerW = simState.activeMeshNodes * CONCEPTUAL_MODEL.powerMeshNodeW;
+                const dynamicTrafficW = (activeUsers / 40) * 8.5; // Mayor consumo RF en picos de tráfico
+                const hourlyConsumptionWh = 100 + 15 + activeMeshPowerW + dynamicTrafficW + (noise2 * 2.0);
+
+                // 7. Generación Fotovoltaica Horaria (Wh)
+                // P_FV = 1449 Wp, eficiencia global = 0.75 (ajustada ligeramente por temperatura/nubosidad)
+                const cloudNoise = 1 + (noise2 * 0.14);
+                const hourlyGenerationWh = Math.max(0, CONCEPTUAL_MODEL.pvPowerWp * simState.hsp * rawSolarCurve[h] * CONCEPTUAL_MODEL.systemEfficiency * cloudNoise);
+
+                // 8. Balance en Banco de Baterías de 24V
+                const netEnergyWh = hourlyGenerationWh - hourlyConsumptionWh;
+                batteryEnergyWh = Math.min(CONCEPTUAL_MODEL.batteryCapacityWh, Math.max(0, batteryEnergyWh + netEnergyWh));
+                const batterySocPct = (batteryEnergyWh / CONCEPTUAL_MODEL.batteryCapacityWh) * 100;
+                // Curva de voltaje realista para banco Plomo-Ácido / LiFePO4 24V (21.6V vacío a 27.6V flotación)
+                const batteryVoltage = 21.8 + (batterySocPct / 100) * 5.6 + (hourlyGenerationWh > 100 ? 0.3 : 0);
+
+                // 9. Disponibilidad en la hora (Uptime)
+                const isServiceOperational = batterySocPct > 8.0 && packetLossPct < 4.5 && rttMs < 85;
+                if (isServiceOperational) uptimeHours += 1;
+
+                // 10. Desvío matemático del Throughput frente al Modelo Conceptual
+                // Si usuarios <= 40, referencia ideal QoS = MIR (5.0 Mbps); si saturado, referencia = CIR (1.25 Mbps)
+                const referenceBandwidth = activeUsers <= 40 ? CONCEPTUAL_MODEL.mirMbps : CONCEPTUAL_MODEL.cirMbps;
+                const throughputDeviationPct = ((throughputPerUserMbps - referenceBandwidth) / referenceBandwidth) * 100;
+
+                totalGenWh += hourlyGenerationWh;
+                totalConsWh += hourlyConsumptionWh;
+                sumThroughput += throughputPerUserMbps;
+                sumRtt += rttMs;
+                sumPacketLoss += packetLossPct;
+
+                data.push({
+                    hour: h,
+                    hourLabel: `${String(h).padStart(2, '0')}:00`,
+                    activeUsers,
+                    effectiveLeoMbps: Number(effectiveLeoMbps.toFixed(1)),
+                    throughputPerUserMbps: Number(throughputPerUserMbps.toFixed(2)),
+                    rttMs: Number(rttMs.toFixed(1)),
+                    packetLossPct: Number(packetLossPct.toFixed(2)),
+                    generationWh: Number(hourlyGenerationWh.toFixed(1)),
+                    consumptionWh: Number(hourlyConsumptionWh.toFixed(1)),
+                    batterySocPct: Number(batterySocPct.toFixed(1)),
+                    batteryVoltage: Number(batteryVoltage.toFixed(2)),
+                    throughputDeviationPct: Number(throughputDeviationPct.toFixed(1)),
+                    isOperational: isServiceOperational
+                });
+            }
+
+            simState.hourlyData = data;
+
+            // Calcular métricas consolidadas (24 horas)
+            const avgThroughput = sumThroughput / 24;
+            const avgRtt = sumRtt / 24;
+            const avgPacketLoss = sumPacketLoss / 24;
+            const uptimePct = (uptimeHours / 24) * 100;
+            const finalBatteryWh = batteryEnergyWh;
+            const avgHourlyConsW = totalConsWh / 24;
+            const autonomyHours = finalBatteryWh / avgHourlyConsW;
+
+            // Desvíos matemáticos exactos (%) frente al modelo conceptual
+            const devThroughputPct = ((avgThroughput - CONCEPTUAL_MODEL.mirMbps) / CONCEPTUAL_MODEL.mirMbps) * 100;
+            const devRttPct = ((avgRtt - CONCEPTUAL_MODEL.kpiRttTargetMs) / CONCEPTUAL_MODEL.kpiRttTargetMs) * 100;
+            const devPacketLossPct = ((avgPacketLoss - CONCEPTUAL_MODEL.kpiPacketLossTargetPct) / CONCEPTUAL_MODEL.kpiPacketLossTargetPct) * 100;
+            const devConsumptionPct = ((totalConsWh - CONCEPTUAL_MODEL.dailyEnergyWh) / CONCEPTUAL_MODEL.dailyEnergyWh) * 100;
+            const theoreticalDailyGenWh = CONCEPTUAL_MODEL.pvPowerWp * CONCEPTUAL_MODEL.designHsp * CONCEPTUAL_MODEL.systemEfficiency; // ~4890 Wh
+            const devGenerationPct = ((totalGenWh - theoreticalDailyGenWh) / theoreticalDailyGenWh) * 100;
+            const devAutonomyPct = ((autonomyHours - CONCEPTUAL_MODEL.kpiAutonomyTargetH) / CONCEPTUAL_MODEL.kpiAutonomyTargetH) * 100;
+
+            simState.summaryMetrics = {
+                uptimePct,
+                avgThroughput,
+                avgRtt,
+                avgPacketLoss,
+                totalGenWh,
+                totalConsWh,
+                theoreticalDailyGenWh,
+                autonomyHours,
+                finalSocPct: (finalBatteryWh / CONCEPTUAL_MODEL.batteryCapacityWh) * 100,
+                devThroughputPct,
+                devRttPct,
+                devPacketLossPct,
+                devConsumptionPct,
+                devGenerationPct,
+                devAutonomyPct
+            };
+
+            renderKpiCards();
+            updateCharts();
+            renderExperimentalTable();
+            updateLiveAlertBanner();
+
+            if (notify) {
+                showToast('Simulación experimental de 24 horas ejecutada y tabulada.', 'success');
+            }
+        }
+
+        // =========================================================================
+        // 6. RENDERIZADO DE TARJETAS DE KPI Y DESVÍOS MATEMÁTICOS
+        // =========================================================================
+        function renderKpiCards() {
+            const m = simState.summaryMetrics;
+            const cards = [
+                {
+                    title: 'Disponibilidad del Servicio (Uptime)',
+                    icon: 'fa-server',
+                    theoretical: '≥ 98.0% mensual',
+                    experimental: `${m.uptimePct.toFixed(1)}%`,
+                    deviation: `${(m.uptimePct - 98.0 >= 0 ? '+' : '')}${(m.uptimePct - 98.0).toFixed(1)}% pts`,
+                    isGood: m.uptimePct >= 98.0,
+                    detail: 'Meta Tabla 10: Continuidad operativa en Gateway.'
+                },
+                {
+                    title: 'Throughput Promedio / Usuario',
+                    icon: 'fa-gauge-high',
+                    theoretical: '5.00 Mbps (MIR) / 1.25 (CIR)',
+                    experimental: `${m.avgThroughput.toFixed(2)} Mbps`,
+                    deviation: `${m.devThroughputPct >= 0 ? '+' : ''}${m.devThroughputPct.toFixed(1)}% vs MIR`,
+                    isGood: m.avgThroughput >= CONCEPTUAL_MODEL.cirMbps,
+                    detail: m.avgThroughput >= CONCEPTUAL_MODEL.cirMbps ? 'Cumple tasa comprometida CIR (≥1.25 Mbps).' : 'Déficit crítico bajo CIR garantizado.'
+                },
+                {
+                    title: 'Latencia Promedio (RTT)',
+                    icon: 'fa-stopwatch',
+                    theoretical: '< 40.0 ms (LEO Ku/Ka)',
+                    experimental: `${m.avgRtt.toFixed(1)} ms`,
+                    deviation: `${m.devRttPct >= 0 ? '+' : ''}${m.devRttPct.toFixed(1)}% vs límite`,
+                    isGood: m.avgRtt < CONCEPTUAL_MODEL.kpiRttTargetMs,
+                    detail: 'Trazas Ping continuas hacia DNS globales.'
+                },
+                {
+                    title: 'Pérdida de Paquetes',
+                    icon: 'fa-network-wired',
+                    theoretical: '< 1.00%',
+                    experimental: `${m.avgPacketLoss.toFixed(2)}%`,
+                    deviation: `${m.devPacketLossPct >= 0 ? '+' : ''}${m.devPacketLossPct.toFixed(1)}% vs umbral`,
+                    isGood: m.avgPacketLoss < CONCEPTUAL_MODEL.kpiPacketLossTargetPct,
+                    detail: 'Control de tráfico QoS en enrutador central.'
+                },
+                {
+                    title: 'Consumo Energético Diario (Ed)',
+                    icon: 'fa-bolt',
+                    theoretical: '3,912 Wh/día (163 W)',
+                    experimental: `${Math.round(m.totalConsWh).toLocaleString('es-CO')} Wh/día`,
+                    deviation: `${m.devConsumptionPct >= 0 ? '+' : ''}${m.devConsumptionPct.toFixed(1)}% desvío`,
+                    isGood: Math.abs(m.devConsumptionPct) <= 10.0,
+                    detail: 'Varía por modulación RF y nodos Mesh activos.'
+                },
+                {
+                    title: 'Autonomía Banco Baterías 24V',
+                    icon: 'fa-battery-three-quarters',
+                    theoretical: '≥ 24.0 h sin sol',
+                    experimental: `${m.autonomyHours.toFixed(1)} h (${m.finalSocPct.toFixed(0)}% SoC)`,
+                    deviation: `${m.devAutonomyPct >= 0 ? '+' : ''}${m.devAutonomyPct.toFixed(1)}% margen`,
+                    isGood: m.autonomyHours >= CONCEPTUAL_MODEL.kpiAutonomyTargetH,
+                    detail: `Generación FV: ${Math.round(m.totalGenWh).toLocaleString('es-CO')} Wh (${m.devGenerationPct >= 0 ? '+' : ''}${m.devGenerationPct.toFixed(1)}% vs diseño).`
+                }
+            ];
+
+            const grid = document.getElementById('kpi-cards-grid');
+            grid.innerHTML = cards.map(c => {
+                const statusBadge = c.isGood
+                    ? `<span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">CUMPLE KPI</span>`
+                    : `<span class="px-2 py-0.5 text-[11px] font-bold rounded-full bg-rose-100 text-rose-800 border border-rose-200">DESVÍO CRÍTICO</span>`;
+
+                const devColor = c.isGood ? 'text-emerald-700 bg-emerald-50' : 'text-rose-700 bg-rose-50';
+
+                return `
+                    <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/60 hover:bg-white hover:shadow-md transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i class="fa-solid ${c.icon} text-blue-600"></i> ${c.title}
+                                </span>
+                                ${statusBadge}
+                            </div>
+                            <div class="flex items-baseline justify-between mt-3">
+                                <div>
+                                    <div class="text-[11px] text-slate-400 uppercase font-semibold">Simulado</div>
+                                    <div class="text-xl font-extrabold font-mono text-slate-900">${c.experimental}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-[11px] text-slate-400 uppercase font-semibold">Desvío Mat.</div>
+                                    <div class="text-xs font-mono font-bold px-2 py-0.5 rounded ${devColor}">${c.deviation}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-2.5 border-t border-slate-200/70 flex flex-col gap-0.5 text-[11px]">
+                            <div class="flex justify-between text-slate-600">
+                                <span>Modelo Teórico:</span>
+                                <span class="font-mono font-semibold">${c.theoretical}</span>
+                            </div>
+                            <span class="text-slate-400">${c.detail}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // =========================================================================
+        // 7. GRÁFICOS DE DISPERSIÓN Y EVOLUCIÓN ENERGÉTICA (CHART.JS)
+        // =========================================================================
+        function initCharts() {
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#475569';
+
+            // 1. Gráfico de Dispersión: Usuarios Concurrentes vs Throughput Efectivo
+            const ctx1 = document.getElementById('scatterThroughputChart').getContext('2d');
+            scatterThroughputChart = new Chart(ctx1, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Muestras Experimentales (24h)',
+                            data: [],
+                            backgroundColor: 'rgba(37, 99, 235, 0.78)',
+                            borderColor: '#1d4ed8',
+                            borderWidth: 1.5,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        },
+                        {
+                            label: 'Límite Teórico MIR (5.0 Mbps)',
+                            data: [{ x: 0, y: 5.0 }, { x: 50, y: 5.0 }],
+                            type: 'line',
+                            borderColor: '#059669',
+                            borderWidth: 2,
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            label: 'Mínimo Garantizado CIR (1.25 Mbps)',
+                            data: [{ x: 0, y: 1.25 }, { x: 50, y: 1.25 }],
+                            type: 'line',
+                            borderColor: '#d97706',
+                            borderWidth: 2,
+                            borderDash: [4, 4],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    if (ctx.datasetIndex === 0) {
+                                        const pt = ctx.raw;
+                                        return `Hora ${pt.hourLabel}: ${pt.x} usuarios → ${pt.y} Mbps/usr`;
+                                    }
+                                    return `${ctx.dataset.label}: ${ctx.raw.y} Mbps`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Usuarios Concurrentes (dispositivos)', font: { size: 11, weight: 'bold' } },
+                            min: 0,
+                            max: 52,
+                            grid: { color: '#f1f5f9' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Ancho de Banda / Usuario (Mbps)', font: { size: 11, weight: 'bold' } },
+                            min: 0,
+                            max: 6.0,
+                            grid: { color: '#f1f5f9' }
+                        }
+                    }
+                }
+            });
+
+            // 2. Gráfico de Dispersión: Carga / Atenuación vs Latencia RTT y Pérdida de Paquetes
+            const ctx2 = document.getElementById('scatterLatencyChart').getContext('2d');
+            scatterLatencyChart = new Chart(ctx2, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Latencia RTT Experimental (ms)',
+                            data: [],
+                            backgroundColor: 'rgba(79, 70, 229, 0.78)',
+                            borderColor: '#4338ca',
+                            pointRadius: 6,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Pérdida de Paquetes (%)',
+                            data: [],
+                            backgroundColor: 'rgba(225, 29, 72, 0.75)',
+                            borderColor: '#be123c',
+                            pointStyle: 'triangle',
+                            pointRadius: 6,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Umbral Crítico RTT (40 ms)',
+                            data: [{ x: 0, y: 40 }, { x: 100, y: 40 }],
+                            type: 'line',
+                            borderColor: '#dc2626',
+                            borderWidth: 2,
+                            borderDash: [6, 4],
+                            pointRadius: 0,
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const pt = ctx.raw;
+                                    if (ctx.datasetIndex === 0) return `Hora ${pt.hourLabel} (Índice Carga/Clima ${pt.x}%): RTT ${pt.y} ms`;
+                                    if (ctx.datasetIndex === 1) return `Hora ${pt.hourLabel} (Índice Carga/Clima ${pt.x}%): Pérdida ${pt.y}%`;
+                                    return 'Umbral Máximo RTT: 40 ms';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Índice Combinado Atenuación Atmosférica + Carga Red (%)', font: { size: 11, weight: 'bold' } },
+                            min: 0,
+                            max: 105,
+                            grid: { color: '#f1f5f9' }
+                        },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Latencia RTT (ms)', font: { size: 11, weight: 'bold' } },
+                            min: 10,
+                            max: 80,
+                            grid: { color: '#f1f5f9' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'Pérdida Paquetes (%)', font: { size: 11, weight: 'bold' } },
+                            min: 0,
+                            max: 5,
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+
+            // 3. Gráfico de Evolución Energética (24 horas)
+            const ctx3 = document.getElementById('energyEvolutionChart').getContext('2d');
+            energyEvolutionChart = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Generación Solar FV (Wh)',
+                            data: [],
+                            backgroundColor: 'rgba(245, 158, 11, 0.82)',
+                            borderRadius: 4,
+                            yAxisID: 'y',
+                            order: 2
+                        },
+                        {
+                            label: 'Consumo Equipos Telecom (Wh)',
+                            data: [],
+                            backgroundColor: 'rgba(59, 130, 246, 0.78)',
+                            borderRadius: 4,
+                            yAxisID: 'y',
+                            order: 3
+                        },
+                        {
+                            label: 'Estado de Carga Batería 24V (SoC %)',
+                            data: [],
+                            type: 'line',
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                            borderWidth: 3,
+                            pointRadius: 3.5,
+                            tension: 0.35,
+                            fill: true,
+                            yAxisID: 'y1',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Energía Horaria (Wh)', font: { size: 11, weight: 'bold' } },
+                            min: 0,
+                            grid: { color: '#f1f5f9' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'Estado de Carga Batería 24V (%)', font: { size: 11, weight: 'bold' } },
+                            min: 0,
+                            max: 105,
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            const d = simState.hourlyData;
+
+            // Actualizar Dispersión 1
+            scatterThroughputChart.data.datasets[0].data = d.map(row => ({
+                x: row.activeUsers,
+                y: row.throughputPerUserMbps,
+                hourLabel: row.hourLabel
+            }));
+            scatterThroughputChart.update();
+
+            // Actualizar Dispersión 2 (Índice combinado de estrés climático y carga de red)
+            scatterLatencyChart.data.datasets[0].data = d.map(row => {
+                const stressIdx = Math.min(100, Math.round((simState.attenuationPct * 0.65) + ((row.activeUsers / 50) * 35)));
+                return { x: stressIdx, y: row.rttMs, hourLabel: row.hourLabel };
+            });
+            scatterLatencyChart.data.datasets[1].data = d.map(row => {
+                const stressIdx = Math.min(100, Math.round((simState.attenuationPct * 0.65) + ((row.activeUsers / 50) * 35)));
+                return { x: stressIdx, y: row.packetLossPct, hourLabel: row.hourLabel };
+            });
+            scatterLatencyChart.update();
+
+            // Actualizar Evolución Energética
+            energyEvolutionChart.data.labels = d.map(row => row.hourLabel);
+            energyEvolutionChart.data.datasets[0].data = d.map(row => row.generationWh);
+            energyEvolutionChart.data.datasets[1].data = d.map(row => row.consumptionWh);
+            energyEvolutionChart.data.datasets[2].data = d.map(row => row.batterySocPct);
+            energyEvolutionChart.update();
+
+            // Actualizar píldora de balance neto
+            const net24h = Math.round(simState.summaryMetrics.totalGenWh - simState.summaryMetrics.totalConsWh);
+            const pill = document.getElementById('energy-summary-pill');
+            if (net24h >= 0) {
+                pill.className = 'font-mono text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200';
+                pill.textContent = `Balance Neto 24h: +${net24h.toLocaleString('es-CO')} Wh (Superávit)`;
+            } else {
+                pill.className = 'font-mono text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200';
+                pill.textContent = `Balance Neto 24h: ${net24h.toLocaleString('es-CO')} Wh (Descarga Batería)`;
+            }
+        }
+
+        // =========================================================================
+        // 8. TABLA MINUCIOSA DE DATOS EXPERIMENTALES (24 HORAS)
+        // =========================================================================
+        function renderExperimentalTable() {
+            const tbody = document.getElementById('experimental-table-body');
+            tbody.innerHTML = simState.hourlyData.map(row => {
+                const rttAlert = row.rttMs >= 40;
+                const lossAlert = row.packetLossPct >= 1.0;
+                const cirAlert = row.throughputPerUserMbps < CONCEPTUAL_MODEL.cirMbps;
+                const hasWarning = rttAlert || lossAlert || cirAlert;
+
+                const statusHtml = hasWarning
+                    ? `<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-sans font-bold text-[10px]">DESVÍO</span>`
+                    : `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 font-sans font-bold text-[10px]">ÓPTIMO</span>`;
+
+                const devSign = row.throughputDeviationPct >= 0 ? '+' : '';
+                const devClass = row.throughputDeviationPct < -15 ? 'text-rose-600 font-bold' : 'text-slate-600';
+
+                return `
+                    <tr class="hover:bg-blue-50/50 transition-colors cursor-pointer" onclick="selectRowHour(${row.hour})">
+                        <td class="py-2.5 px-3.5 font-bold text-slate-900">${row.hourLabel}</td>
+                        <td class="py-2.5 px-3.5 text-right">${row.activeUsers}</td>
+                        <td class="py-2.5 px-3.5 text-right">${row.effectiveLeoMbps.toFixed(1)}</td>
+                        <td class="py-2.5 px-3.5 text-right font-semibold ${cirAlert ? 'text-rose-600' : 'text-blue-700'}">${row.throughputPerUserMbps.toFixed(2)} Mbps</td>
+                        <td class="py-2.5 px-3.5 text-right ${rttAlert ? 'text-rose-600 font-bold' : ''}">${row.rttMs.toFixed(1)} ms</td>
+                        <td class="py-2.5 px-3.5 text-right ${lossAlert ? 'text-rose-600 font-bold' : ''}">${row.packetLossPct.toFixed(2)}%</td>
+                        <td class="py-2.5 px-3.5 text-right text-amber-700">${row.generationWh.toFixed(1)}</td>
+                        <td class="py-2.5 px-3.5 text-right text-slate-700">${row.consumptionWh.toFixed(1)}</td>
+                        <td class="py-2.5 px-3.5 text-right text-emerald-700 font-semibold">${row.batteryVoltage.toFixed(1)}V (${row.batterySocPct.toFixed(0)}%)</td>
+                        <td class="py-2.5 px-3.5 text-right ${devClass}">${devSign}${row.throughputDeviationPct.toFixed(1)}%</td>
+                        <td class="py-2.5 px-3.5 text-center">${statusHtml}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function selectRowHour(hour) {
+            simState.inspectedHour = hour;
+            document.getElementById('hour-inspector').value = hour;
+            updateLiveAlertBanner();
+            showToast(`Inspeccionando telemetría de las ${String(hour).padStart(2, '0')}:00 en el diagrama animado.`, 'info');
+        }
+
+        function updateLiveAlertBanner() {
+            const row = simState.hourlyData[simState.inspectedHour] || simState.hourlyData[12];
+            if (!row) return;
+
+            const banner = document.getElementById('deviation-alert-banner');
+            const badge = document.getElementById('alert-badge');
+            const msg = document.getElementById('alert-message');
+            const stamp = document.getElementById('alert-timestamp');
+            const metricsPill = document.getElementById('canvas-live-metrics');
+
+            metricsPill.textContent = `[${row.hourLabel}] LEO: ${row.effectiveLeoMbps} Mbps | RTT: ${row.rttMs} ms | Cons: ${Math.round(row.consumptionWh)}W | Bat: ${row.batteryVoltage}V (${row.batterySocPct}%)`;
+
+            const issues = [];
+            if (row.rttMs >= 40) issues.push(`Latencia RTT elevada (${row.rttMs} ms > 40 ms)`);
+            if (row.packetLossPct >= 1.0) issues.push(`Pérdida de paquetes (${row.packetLossPct}% > 1%)`);
+            if (row.throughputPerUserMbps < 1.25) issues.push(`Throughput bajo CIR (${row.throughputPerUserMbps} < 1.25 Mbps)`);
+            if (row.batterySocPct < 35) issues.push(`Reserva baja en banco 24V (${row.batterySocPct}%)`);
+            if (simState.activeMeshNodes < 4) issues.push(`Enrutamiento Mesh degradado (3/4 nodos)`);
+
+            if (issues.length > 0) {
+                banner.className = 'bg-amber-50 border-b border-amber-200 px-5 py-2.5 flex items-center justify-between gap-3 transition-colors';
+                badge.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping shrink-0';
+                msg.className = 'text-xs sm:text-sm font-medium text-amber-900';
+                msg.textContent = `Desvío detectado a las ${row.hourLabel}: ${issues.join(' • ')}.`;
+                stamp.className = 'font-mono text-xs font-bold text-amber-800 hidden sm:inline';
+                stamp.textContent = 'ALERTA DE DESVÍO';
+            } else {
+                banner.className = 'bg-emerald-50 border-b border-emerald-200 px-5 py-2.5 flex items-center justify-between gap-3 transition-colors';
+                badge.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0';
+                msg.className = 'text-xs sm:text-sm font-medium text-emerald-900';
+                msg.textContent = `Telemetría nominal a las ${row.hourLabel}: Throughput ${row.throughputPerUserMbps} Mbps/usr, RTT ${row.rttMs} ms y autonomía 24V estable (${row.batterySocPct}%).`;
+                stamp.className = 'font-mono text-xs font-bold text-emerald-700 hidden sm:inline';
+                stamp.textContent = 'ESTADO: ÓPTIMO';
+            }
+        }
+
+        // =========================================================================
+        // 9. EXPORTACIÓN A CSV DE DATOS EXPERIMENTALES
+        // =========================================================================
+        function exportToCSV() {
+            if (!simState.hourlyData.length) return;
+
+            const headers = [
+                'Hora',
+                'Escenario',
+                'Nodos_Mesh_Activos',
+                'Atenuacion_KuKa_Pct',
+                'HSP_Diseno_Operativo',
+                'Usuarios_Concurrentes',
+                'Capacidad_LEO_Efectiva_Mbps',
+                'Throughput_Usuario_Mbps',
+                'MIR_Teorico_Mbps',
+                'CIR_Teorico_Mbps',
+                'Desvio_Throughput_Pct',
+                'Latencia_RTT_ms',
+                'Perdida_Paquetes_Pct',
+                'Generacion_FV_Wh',
+                'Consumo_Equipos_Wh',
+                'Voltaje_Bateria_24V',
+                'SoC_Bateria_Pct'
+            ];
+
+            const rows = simState.hourlyData.map(r => [
+                r.hourLabel,
+                simState.scenario,
+                `${simState.activeMeshNodes}/4`,
+                simState.attenuationPct,
+                simState.hsp,
+                r.activeUsers,
+                r.effectiveLeoMbps,
+                r.throughputPerUserMbps,
+                CONCEPTUAL_MODEL.mirMbps,
+                CONCEPTUAL_MODEL.cirMbps,
+                r.throughputDeviationPct,
+                r.rttMs,
+                r.packetLossPct,
+                r.generationWh,
+                r.consumptionWh,
+                r.batteryVoltage,
+                r.batterySocPct
+            ]);
+
+            const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `bitacora_experimental_hibrido_rural_${simState.scenario}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showToast('Archivo CSV descargado con las 24 muestras experimentales.', 'success');
+        }
+
+        // =========================================================================
+        // 10. SIMULACIÓN VISUAL ANIMADA EN CANVAS (FLUJO DATOS Y ENERGÍA)
+        // =========================================================================
+        let animTick = 0;
+
+        function toggleAnimationPlay() {
+            simState.isAnimating = !simState.isAnimating;
+            const icon = document.getElementById('icon-anim-play');
+            icon.className = simState.isAnimating ? 'fa-solid fa-pause' : 'fa-solid fa-play';
+        }
+
+        function resizeArchitectureCanvas() {
+            const canvas = document.getElementById('architectureCanvas');
+            if (!canvas) return;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+        }
+
+        function drawArchitectureFrame() {
+            const canvas = document.getElementById('architectureCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const W = rect.width;
+            const H = rect.height;
+
+            if (simState.isAnimating) {
+                animTick += 1;
+            }
+
+            const row = simState.hourlyData[simState.inspectedHour] || {
+                activeUsers: 28,
+                effectiveLeoMbps: 185,
+                throughputPerUserMbps: 4.8,
+                rttMs: 29,
+                generationWh: 420,
+                consumptionWh: 163,
+                batterySocPct: 88,
+                batteryVoltage: 25.4
+            };
+
+            // Fondo técnico con cuadrícula sutil
+            ctx.fillStyle = '#090e1a';
+            ctx.fillRect(0, 0, W, H);
+
+            // Línea divisoria entre Subsistema Telecomunicaciones (arriba) y Subsistema Fotovoltaico (abajo)
+            const splitY = H * 0.54;
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.moveTo(20, splitY);
+            ctx.lineTo(W - 20, splitY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Etiquetas de secciones en el canvas
+            ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
+            ctx.font = 'bold 11px Inter, sans-serif';
+            ctx.fillText('SUBSISTEMA DE TELECOMUNICACIONES (BACKHAUL LEO + GATEWAY QoS + RED WI-FI MESH 802.11ax)', 22, 24);
+
+            ctx.fillStyle = 'rgba(251, 191, 36, 0.85)';
+            ctx.fillText('SUBSISTEMA ENERGÉTICO FOTOVOLTAICO OFF-GRID (1.45 kWp + MPPT + BANCO BATERÍAS 24V)', 22, splitY + 22);
+
+            // Coordenadas responsivas de nodos clave
+            const satPos = { x: W * 0.11, y: H * 0.17 };
+            const dishPos = { x: W * 0.26, y: H * 0.36 };
+            const gwPos = { x: W * 0.46, y: H * 0.36 };
+            const meshPos = { x: W * 0.68, y: H * 0.33 };
+            const usersPos = { x: W * 0.88, y: H * 0.36 };
+
+            const solarPos = { x: W * 0.16, y: H * 0.74 };
+            const mpptPos = { x: W * 0.38, y: H * 0.74 };
+            const batPos = { x: W * 0.60, y: H * 0.74 };
+            const loadPos = { x: W * 0.82, y: H * 0.74 };
+
+            // Efecto climático (Nubes / Lluvia en la parte superior izquierda si hay atenuación)
+            if (simState.attenuationPct > 25) {
+                const rainIntensity = simState.attenuationPct / 100;
+                ctx.fillStyle = `rgba(99, 102, 241, ${0.12 + rainIntensity * 0.22})`;
+                ctx.beginPath();
+                ctx.arc(W * 0.18, H * 0.22, 38, 0, Math.PI * 2);
+                ctx.arc(W * 0.22, H * 0.21, 30, 0, Math.PI * 2);
+                ctx.arc(W * 0.14, H * 0.23, 28, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Gotas animadas si lluvia > 45%
+                if (simState.attenuationPct > 45) {
+                    ctx.strokeStyle = 'rgba(129, 140, 248, 0.65)';
+                    ctx.lineWidth = 1.5;
+                    for (let i = 0; i < 12; i++) {
+                        const rx = (W * 0.12) + ((i * 19 + animTick * 1.5) % 110);
+                        const ry = (H * 0.23) + ((animTick * 3 + i * 17) % 55);
+                        ctx.beginPath();
+                        ctx.moveTo(rx, ry);
+                        ctx.lineTo(rx - 4, ry + 9);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Función auxiliar para dibujar enlaces y paquetes animados
+            function drawLink(p1, p2, color, speed, packetCount, dashed = false) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2.5;
+                if (dashed) ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Paquetes viajando
+                for (let i = 0; i < packetCount; i++) {
+                    const t = ((animTick * speed * 0.01) + (i / packetCount)) % 1;
+                    const px = p1.x + (p2.x - p1.x) * t;
+                    const py = p1.y + (p2.y - p1.y) * t;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Enlaces de Telecomunicaciones
+            const satColor = simState.attenuationPct > 60 ? '#f43f5e' : '#38bdf8';
+            const speedFactor = Math.max(0.35, 1.4 - (row.rttMs / 60));
+            drawLink(satPos, dishPos, satColor, speedFactor, 4, true);
+            drawLink(dishPos, gwPos, '#38bdf8', speedFactor * 1.2, 3);
+            drawLink(gwPos, meshPos, '#34d399', speedFactor * 1.2, 3);
+            drawLink(meshPos, usersPos, '#34d399', speedFactor * 1.1, Math.min(5, Math.ceil(row.activeUsers / 10)));
+
+            // Enlaces de Energía Fotovoltaica
+            const isGenerating = row.generationWh > 10;
+            drawLink(solarPos, mpptPos, isGenerating ? '#fbbf24' : '#334155', isGenerating ? 1.0 : 0, isGenerating ? 3 : 0);
+            drawLink(mpptPos, batPos, isGenerating ? '#fbbf24' : '#334155', isGenerating ? 1.0 : 0, isGenerating ? 3 : 0);
+            drawLink(batPos, loadPos, '#10b981', 0.9, 3);
+            // Alimentación vertical hacia el Gateway/Equipos
+            drawLink(loadPos, { x: loadPos.x, y: splitY - 6 }, '#10b981', 0.8, 2, true);
+
+            // Función auxiliar para dibujar nodos estilizados
+            function drawNodeBox(pos, title, subtitle, borderColor, bgColor = '#1e293b') {
+                const boxW = Math.min(138, W * 0.17);
+                const boxH = 54;
+                const x = pos.x - boxW / 2;
+                const y = pos.y - boxH / 2;
+
+                ctx.fillStyle = bgColor;
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(x, y, boxW, boxH, 10);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = 'bold 11px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(title, pos.x, pos.y - 5);
+
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '10px JetBrains Mono, monospace';
+                ctx.fillText(subtitle, pos.x, pos.y + 12);
+                ctx.textAlign = 'left';
+            }
+
+            // Dibujar los 9 bloques del sistema
+            drawNodeBox(satPos, 'Satélite LEO', 'Bandas Ku/Ka', satColor);
+            drawNodeBox(dishPos, 'Terminal LEO', `${row.effectiveLeoMbps} Mbps DL`, '#38bdf8');
+            drawNodeBox(gwPos, 'Gateway QoS', `RTT: ${row.rttMs} ms`, '#6366f1');
+
+            const meshBorder = simState.activeMeshNodes === 4 ? '#10b981' : '#f59e0b';
+            drawNodeBox(meshPos, `Mesh 802.11ax`, `${simState.activeMeshNodes}/4 Nodos Activos`, meshBorder);
+            drawNodeBox(usersPos, `${row.activeUsers} Usuarios`, `${row.throughputPerUserMbps} Mbps/usr`, '#38bdf8');
+
+            drawNodeBox(solarPos, 'Paneles 1.45kWp', `Gen: ${Math.round(row.generationWh)} Wh`, isGenerating ? '#fbbf24' : '#475569');
+            drawNodeBox(mpptPos, 'Controlador MPPT', `η = 75% | ${simState.hsp} HSP`, '#f59e0b');
+
+            const batColor = row.batterySocPct > 40 ? '#10b981' : '#f43f5e';
+            drawNodeBox(batPos, 'Banco 24V DC', `${row.batteryVoltage}V (${row.batterySocPct}%)`, batColor);
+            drawNodeBox(loadPos, 'Distribución DC', `Carga: ${Math.round(row.consumptionWh)} W`, '#10b981');
+
+            requestAnimationFrame(drawArchitectureFrame);
+        }
+
+        // =========================================================================
+        // 11. INICIALIZACIÓN AL CARGAR LA VENTANA
+        // =========================================================================
+        window.onload = function () {
+            // Poblar selector de horas (00:00 a 23:00)
+            const hourSelect = document.getElementById('hour-inspector');
+            for (let h = 0; h < 24; h++) {
+                const opt = document.createElement('option');
+                opt.value = h;
+                opt.textContent = `${String(h).padStart(2, '0')}:00`;
+                if (h === simState.inspectedHour) opt.selected = true;
+                hourSelect.appendChild(opt);
+            }
+
+            initCharts();
+            runFull24HourSimulation(false);
+            resizeArchitectureCanvas();
+            window.addEventListener('resize', resizeArchitectureCanvas);
+            drawArchitectureFrame();
+        };
+    </script>
+</body>
+</html>
