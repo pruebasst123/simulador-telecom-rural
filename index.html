@@ -1009,9 +1009,10 @@
                 const bogotaHourStr = new Intl.DateTimeFormat('en-US', {
                     timeZone: 'America/Bogota',
                     hour: 'numeric',
-                    hour12: false
+                    hourCycle: 'h23'
                 }).format(new Date());
-                const liveHour = Math.max(0, Math.min(23, parseInt(bogotaHourStr, 10) || 12));
+                const parsedHour = parseInt(bogotaHourStr, 10);
+                const liveHour = Number.isNaN(parsedHour) ? 0 : (parsedHour % 24);
                 state.hour = liveHour;
                 document.getElementById('inp-hour').value = liveHour;
 
