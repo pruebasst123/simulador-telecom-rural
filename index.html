@@ -1794,30 +1794,64 @@
         function downloadCSV() {
             const loc = getActiveLocation();
             const geo = getGeoConnectivityImpact();
-            const headers = ['Hora', 'Ubicacion', 'Latitud', 'Longitud', 'Bioma_Terreno', 'Origen', 'Usuarios', 'HSP_Hora', 'RainFade_Pct', 'LEO_Mbps', 'Throughput_Usr_Mbps', 'RTT_ms', 'Perdida_Pct', 'Gen_FV_Wh', 'Consumo_Wh', 'Bat_Volt', 'Bat_SoC_Pct', 'Desvio_MIR_Pct', 'Estado_KPI'];
+            const nearestNode = document.getElementById('gis-nearest')?.textContent?.trim() || 'Nodo Mesh 1';
+            const cleanLocation = String(loc.name || 'Ubicacion Rural').replace(/;/g, ' -').replace(/"/g, "'");
+            const latDecimal = Number(loc.lat).toFixed(5);
+            const lonDecimal = Number(loc.lon).toFixed(5);
+
+            const headers = [
+                'Hora',
+                'Ubicacion',
+                'Latitud',
+                'Longitud',
+                'Bioma_Terreno',
+                'Origen',
+                'Personas_Conectadas',
+                'Sol_HSP_Hora',
+                'Lluvia_Rain_Fade_Pct',
+                'Antena_LEO_Total_Mbps',
+                'Vel_Por_Persona_Mbps',
+                'Retraso_RTT_ms',
+                'Perdida_Paquetes_Pct',
+                'Sol_Captado_Wh',
+                'Gasto_Wh',
+                'Bateria_24V_Pct',
+                'Bateria_Voltaje_V',
+                'Estado_Calidad',
+                'Desvio_MIR_Pct',
+                'Cliente_Nodo',
+                'Cliente_Distancia_m',
+                'Cliente_RSSI_dBm',
+                'Cliente_Vel_Efectiva_Mbps'
+            ];
+
             const lines = state.rows.map(r => [
                 r.label,
-                `"${loc.name}"`,
-                loc.lat.toFixed(4),
-                loc.lon.toFixed(4),
+                `"${cleanLocation}"`,
+                latDecimal,
+                lonDecimal,
                 `"${geo.label} (+${geo.meshDbLoss}dB)"`,
-                r.origin,
+                r.origin === 'REAL_OPEN_METEO' ? 'REAL' : 'SIM',
                 r.users,
-                r.hspVal,
+                Number(r.hspVal).toFixed(2),
                 r.rainVal,
-                r.leo,
-                r.thr,
-                r.rtt,
-                r.loss,
-                r.gen,
-                r.cons,
-                r.volt,
-                r.soc,
-                r.devMir,
-                r.isOk ? 'OPTIMO' : 'DESVIO'
-            ].join(','));
+                Number(r.leo).toFixed(1),
+                Number(r.thr).toFixed(2),
+                Number(r.rtt).toFixed(1),
+                Number(r.loss).toFixed(2),
+                Number(r.gen).toFixed(1),
+                Number(r.cons).toFixed(1),
+                Number(r.soc).toFixed(1),
+                Number(r.volt).toFixed(2),
+                r.isOk ? 'OPTIMO' : 'DESVIO',
+                Number(r.devMir).toFixed(1),
+                `"${nearestNode}"`,
+                Math.round(state.distM),
+                state.rssi,
+                Number(state.effMbps).toFixed(2)
+            ].join(';'));
 
-            const csvContent = '\uFEFF' + [headers.join(','), ...lines].join('\n');
+            const csvContent = '\uFEFFsep=;\n' + [headers.join(';'), ...lines].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1827,7 +1861,7 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            notify('Archivo CSV exportado correctamente.', 'success');
+            notify('Archivo CSV exportado correctamente para Excel.', 'success');
         }
 
         function resizeCanvas(id) {
