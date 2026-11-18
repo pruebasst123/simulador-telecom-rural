@@ -437,58 +437,130 @@
         <!-- 5. GRÁFICOS DE DISPERSIÓN Y BALANCE ENERGÉTICO -->
         <section class="space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                    <span class="text-[10px] font-mono font-bold uppercase text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Dispersión I</span>
-                    <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1">Usuarios Concurrentes vs. Throughput Efectivo (Mbps)</h3>
-                    <p class="text-xs text-slate-500 mb-3">Muestras horarias frente a límites MIR (5.0 Mbps) y CIR (1.25 Mbps).</p>
-                    <div class="relative h-64 w-full"><canvas id="chartScatter1"></canvas></div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <span class="text-[10px] font-mono font-bold uppercase text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Gráfica 1 • Velocidad de Internet</span>
+                            <span class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Ideal: Cerca de 5.0 Mbps</span>
+                        </div>
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1.5">¿Cómo cambia la velocidad según cuántas personas se conectan?</h3>
+                        <p class="text-xs text-slate-500 mb-3">Cada <strong>punto azul</strong> es una hora del día. Entre más arriba esté el punto, más rápido navega cada persona. Si baja de la <strong>línea naranja (1.25 Mbps)</strong>, el internet se vuelve lento.</p>
+                        <div class="relative h-64 w-full"><canvas id="chartScatter1"></canvas></div>
+                    </div>
+                    <div id="explain-scatter1" class="mt-3 p-3 rounded-xl bg-blue-50/80 border border-blue-100 text-xs text-slate-700 leading-relaxed">
+                        Calculando resumen de velocidad por usuario...
+                    </div>
                 </div>
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                    <span class="text-[10px] font-mono font-bold uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Dispersión II</span>
-                    <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1">Estrés Climático/Red vs. Latencia RTT (ms) y Pérdida (%)</h3>
-                    <p class="text-xs text-slate-500 mb-3">Evaluación frente a umbrales KPI: RTT &lt; 40 ms y Pérdida &lt; 1%.</p>
-                    <div class="relative h-64 w-full"><canvas id="chartScatter2"></canvas></div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <span class="text-[10px] font-mono font-bold uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Gráfica 2 • Estabilidad y Retraso</span>
+                            <span class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Ideal: Debajo de la línea roja</span>
+                        </div>
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1.5">¿Cómo afectan la lluvia y la congestión a las videollamadas?</h3>
+                        <p class="text-xs text-slate-500 mb-3">Los <strong>puntos morados</strong> miden el retraso (RTT en ms) y los <strong>triángulos rojos</strong> los datos perdidos (%). Mientras estén <strong>por debajo de la línea roja (40 ms)</strong>, las llamadas son fluidas.</p>
+                        <div class="relative h-64 w-full"><canvas id="chartScatter2"></canvas></div>
+                    </div>
+                    <div id="explain-scatter2" class="mt-3 p-3 rounded-xl bg-indigo-50/80 border border-indigo-100 text-xs text-slate-700 leading-relaxed">
+                        Calculando resumen de estabilidad y latencia...
+                    </div>
                 </div>
             </div>
 
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                     <div>
-                        <span class="text-[10px] font-mono font-bold uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Balance Energético 24h</span>
-                        <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1">Generación FV (Wh), Consumo Equipos (Wh) y Batería 24V (SoC %)</h3>
+                        <span class="text-[10px] font-mono font-bold uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Gráfica 3 • Energía Solar y Batería (24 Horas)</span>
+                        <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1">¿Alcanza el sol del día para mantener la antena encendida toda la noche?</h3>
+                        <p class="text-xs text-slate-500">Las <strong>barras amarillas</strong> muestran la energía captada por los paneles solares, las <strong>azules</strong> lo que gastan los equipos, y la <strong>línea verde</strong> el nivel de carga de la batería (%).</p>
                     </div>
-                    <span id="energy-pill" class="font-mono text-xs font-bold px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200">Balance 24h: +0 Wh</span>
+                    <span id="energy-pill" class="font-mono text-xs font-bold px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">Balance 24h: +0 Wh</span>
                 </div>
                 <div class="relative h-72 w-full"><canvas id="chartEnergy"></canvas></div>
+                <div id="explain-energy" class="mt-3 p-3 rounded-xl bg-amber-50/80 border border-amber-100 text-xs text-slate-700 leading-relaxed">
+                    Calculando autonomía energética...
+                </div>
             </div>
         </section>
 
         <!-- 6. TABLA MINUCIOSA DE DATOS (24 HORAS) -->
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                    <h2 class="text-base sm:text-lg font-bold text-slate-900"><i class="fa-solid fa-table text-slate-700 mr-1.5"></i>6. Bitácora Técnica Horaria (24 Muestras Experimentales)</h2>
-                    <p class="text-xs text-slate-500">Haga clic en cualquier fila para inspeccionar esa hora en el diagrama y en el cliente.</p>
+            <div class="p-5 border-b border-slate-100 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900"><i class="fa-solid fa-table text-slate-700 mr-1.5"></i>6. Bitácora Horaria (Registro de las 24 Horas)</h2>
+                        <p class="text-xs text-slate-500">Muestra qué pasa hora por hora en la antena. <strong>Haga clic en cualquier fila</strong> para ver cómo navega un usuario en esa hora.</p>
+                    </div>
+                    <button onclick="downloadCSV()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl cursor-pointer self-start flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-csv"></i><span>Descargar CSV</span>
+                    </button>
                 </div>
-                <button onclick="downloadCSV()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl cursor-pointer self-start">Descargar CSV</button>
+
+                <!-- Resumen amigable y leyenda de lectura -->
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs">
+                    <div id="bitacora-summary" class="text-slate-700 font-medium">
+                        Cargando resumen diario...
+                    </div>
+                    <div class="flex items-center gap-3 flex-wrap text-[11px] font-medium text-slate-600 shrink-0">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> <strong>ÓPTIMO:</strong> Velocidad ≥ 1.25 Mbps y Retraso &lt; 40 ms</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span> <strong>DESVÍO:</strong> Lluvia fuerte, congestión o batería baja</span>
+                    </div>
+                </div>
             </div>
-            <div class="overflow-x-auto max-h-96">
+
+            <div class="overflow-x-auto max-h-[28rem]">
                 <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-100 sticky top-0 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-200">
+                    <thead class="bg-slate-100 sticky top-0 text-[11px] text-slate-700 border-b border-slate-200 z-10">
                         <tr>
-                            <th class="py-2.5 px-3">Hora</th>
-                            <th class="py-2.5 px-3">Origen</th>
-                            <th class="py-2.5 px-3 text-right">Usr</th>
-                            <th class="py-2.5 px-3 text-right">HSP / Rain</th>
-                            <th class="py-2.5 px-3 text-right">LEO (Mbps)</th>
-                            <th class="py-2.5 px-3 text-right">Throughput</th>
-                            <th class="py-2.5 px-3 text-right">RTT (ms)</th>
-                            <th class="py-2.5 px-3 text-right">Pérdida</th>
-                            <th class="py-2.5 px-3 text-right">Gen FV (Wh)</th>
-                            <th class="py-2.5 px-3 text-right">Cons (Wh)</th>
-                            <th class="py-2.5 px-3 text-right">Bat 24V</th>
-                            <th class="py-2.5 px-3 text-right">Desvío MIR</th>
-                            <th class="py-2.5 px-3 text-center">KPI</th>
+                            <th class="py-2.5 px-3">
+                                <div class="font-bold uppercase">Hora</div>
+                                <div class="text-[10px] font-normal text-slate-500">24h</div>
+                            </th>
+                            <th class="py-2.5 px-3">
+                                <div class="font-bold uppercase">Dato</div>
+                                <div class="text-[10px] font-normal text-slate-500">Real / Sim</div>
+                            </th>
+                            <th class="py-2.5 px-3 text-right">
+                                <div class="font-bold uppercase">Personas</div>
+                                <div class="text-[10px] font-normal text-slate-500">Conectadas</div>
+                            </th>
+                            <th class="py-2.5 px-3 text-right">
+                                <div class="font-bold uppercase">Clima / Sol</div>
+                                <div class="text-[10px] font-normal text-slate-500">Sol • Lluvia</div>
+                            </th>
+                            <th class="py-2.5 px-3 text-right">
+                                <div class="font-bold uppercase">Antena LEO</div>
+                                <div class="text-[10px] font-normal text-slate-500">Total Mbps</div>
+                            </th>
+                            <th class="py-2.5 px-3 text-right">
+                                <div class="font-bold uppercase text-blue-700">Vel. / Persona</div>
+                                <div class="text-[10px] font-normal text-slate-500">Meta: 5 Mbps</div>
+                            </th>
+                            <th class="py-2.5 px-3 text-right">
+                                <div class="font-bold uppercase">Retraso</div>
+                                <div class="text-[10px] font-normal text-slate-500">Meta &lt; 40ms</div>
+                            </th>
+                            <th class="py-2.5 px-3 text-right">
+                                <div class="font-bold uppercase">Pérdida</div>
+                                <div class="text-[10px] font-normal text-slate-500">Meta &lt; 1%</div>
+                            </th>
+                            <th class="py-2.5 px-3 text-right">
+                                <div class="font-bold uppercase text-amber-700">Sol Captado</div>
+                                <div class="text-[10px] font-normal text-slate-500">Wh generados</div>
+                            </th>
+                            <th class="py-2.5 px-3 text-right">
+                                <div class="font-bold uppercase">Gasto</div>
+                                <div class="text-[10px] font-normal text-slate-500">Wh usados</div>
+                            </th>
+                            <th class="py-2.5 px-3 text-right">
+                                <div class="font-bold uppercase text-emerald-700">Batería 24V</div>
+                                <div class="text-[10px] font-normal text-slate-500">Nivel carga</div>
+                            </th>
+                            <th class="py-2.5 px-3 text-center">
+                                <div class="font-bold uppercase">Estado</div>
+                                <div class="text-[10px] font-normal text-slate-500">Calidad</div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="tbl-body" class="divide-y divide-slate-100 text-xs font-mono"></tbody>
@@ -1203,29 +1275,62 @@
                 type: 'scatter',
                 data: {
                     datasets: [
-                        { label: 'Muestras 24h', data: [], backgroundColor: '#2563eb', pointRadius: 5 },
-                        { label: 'MIR (5.0 Mbps)', data: [{x:0,y:5},{x:42,y:5}], type: 'line', borderColor: '#059669', borderDash: [5,5], pointRadius: 0 },
-                        { label: 'CIR (1.25 Mbps)', data: [{x:0,y:1.25},{x:42,y:1.25}], type: 'line', borderColor: '#d97706', borderDash: [4,4], pointRadius: 0 }
+                        { label: 'Hora del día (24h)', data: [], backgroundColor: '#2563eb', pointRadius: 6, pointHoverRadius: 8 },
+                        { label: 'Velocidad Máxima (5.0 Mbps)', data: [{x:0,y:5},{x:42,y:5}], type: 'line', borderColor: '#059669', borderDash: [5,5], pointRadius: 0 },
+                        { label: 'Mínimo Aceptable (1.25 Mbps)', data: [{x:0,y:1.25},{x:42,y:1.25}], type: 'line', borderColor: '#d97706', borderDash: [4,4], pointRadius: 0 }
                     ]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { min: 0, max: 42, title: { display: true, text: 'Usuarios' } }, y: { min: 0, max: 6, title: { display: true, text: 'Mbps / Usuario' } } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const raw = ctx.raw;
+                                    if (!raw || !raw.hourLabel) return `${ctx.dataset.label}: ${ctx.parsed.y} Mbps`;
+                                    return `Hora ${raw.hourLabel}: ${raw.x} usuarios conectados → ${raw.y.toFixed(2)} Mbps por persona`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { min: 0, max: 42, title: { display: true, text: 'Personas conectadas al mismo tiempo' } },
+                        y: { min: 0, max: 6, title: { display: true, text: 'Velocidad por persona (Mbps)' } }
+                    }
+                }
             });
 
             cScatter2 = new Chart(document.getElementById('chartScatter2'), {
                 type: 'scatter',
                 data: {
                     datasets: [
-                        { label: 'RTT (ms)', data: [], backgroundColor: '#4f46e5', pointRadius: 5, yAxisID: 'y' },
-                        { label: 'Pérdida (%)', data: [], backgroundColor: '#e11d48', pointStyle: 'triangle', pointRadius: 6, yAxisID: 'y1' },
-                        { label: 'Límite RTT 40ms', data: [{x:0,y:40},{x:100,y:40}], type: 'line', borderColor: '#dc2626', borderDash: [5,5], pointRadius: 0, yAxisID: 'y' }
+                        { label: 'Retraso / Latencia (ms)', data: [], backgroundColor: '#4f46e5', pointRadius: 6, pointHoverRadius: 8, yAxisID: 'y' },
+                        { label: 'Datos Perdidos (%)', data: [], backgroundColor: '#e11d48', pointStyle: 'triangle', pointRadius: 7, pointHoverRadius: 9, yAxisID: 'y1' },
+                        { label: 'Límite Máximo sin Cortes (40 ms)', data: [{x:0,y:40},{x:100,y:40}], type: 'line', borderColor: '#dc2626', borderDash: [5,5], pointRadius: 0, yAxisID: 'y' }
                     ]
                 },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const raw = ctx.raw;
+                                    if (!raw || !raw.hourLabel) return `${ctx.dataset.label}: ${ctx.parsed.y}`;
+                                    if (ctx.datasetIndex === 0) {
+                                        return `Hora ${raw.hourLabel} (Estrés ${raw.x}%): Retraso de ${raw.y} ms ${raw.y < 40 ? '(Fluido)' : '(Con retardo)'}`;
+                                    }
+                                    return `Hora ${raw.hourLabel} (Estrés ${raw.x}%): Pérdida de paquetes del ${raw.y}%`;
+                                }
+                            }
+                        }
+                    },
                     scales: {
-                        x: { min: 0, max: 100, title: { display: true, text: 'Índice Estrés Clima/Red (%)' } },
-                        y: { min: 15, max: 75, position: 'left', title: { display: true, text: 'RTT (ms)' } },
-                        y1: { min: 0, max: 5, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Pérdida (%)' } }
+                        x: { min: 0, max: 100, title: { display: true, text: 'Nivel de dificultad (Lluvia + Congestión %)' } },
+                        y: { min: 15, max: 75, position: 'left', title: { display: true, text: 'Retraso en milisegundos (ms)' } },
+                        y1: { min: 0, max: 5, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Pérdida de señal (%)' } }
                     }
                 }
             });
@@ -1235,16 +1340,17 @@
                 data: {
                     labels: [],
                     datasets: [
-                        { label: 'Gen. Solar (Wh)', data: [], backgroundColor: '#f59e0b', yAxisID: 'y' },
-                        { label: 'Consumo (Wh)', data: [], backgroundColor: '#3b82f6', yAxisID: 'y' },
-                        { label: 'Batería 24V (SoC %)', data: [], type: 'line', borderColor: '#10b981', tension: 0.3, yAxisID: 'y1' }
+                        { label: 'Energía del Sol Captada (Wh)', data: [], backgroundColor: '#f59e0b', yAxisID: 'y' },
+                        { label: 'Energía Gastada por Antenas (Wh)', data: [], backgroundColor: '#3b82f6', yAxisID: 'y' },
+                        { label: 'Carga de Batería (%)', data: [], type: 'line', borderColor: '#10b981', borderWidth: 2.5, tension: 0.3, yAxisID: 'y1' }
                     ]
                 },
                 options: {
-                    responsive: true, maintainAspectRatio: false,
+                    responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
-                        y: { min: 0, position: 'left', title: { display: true, text: 'Energía (Wh)' } },
-                        y1: { min: 0, max: 105, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'SoC (%)' } }
+                        y: { min: 0, position: 'left', title: { display: true, text: 'Energía por hora (Wh)' } },
+                        y1: { min: 0, max: 105, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Nivel de Batería (%)' } }
                     }
                 }
             });
@@ -1252,11 +1358,11 @@
 
         function renderCharts() {
             const r = state.rows;
-            cScatter1.data.datasets[0].data = r.map(x => ({ x: x.users, y: x.thr }));
+            cScatter1.data.datasets[0].data = r.map(x => ({ x: x.users, y: x.thr, hourLabel: x.label }));
             cScatter1.update();
 
-            cScatter2.data.datasets[0].data = r.map(x => ({ x: Math.min(100, Math.round(x.rainVal + (x.users / 40) * 40)), y: x.rtt }));
-            cScatter2.data.datasets[1].data = r.map(x => ({ x: Math.min(100, Math.round(x.rainVal + (x.users / 40) * 40)), y: x.loss }));
+            cScatter2.data.datasets[0].data = r.map(x => ({ x: Math.min(100, Math.round(x.rainVal + (x.users / 40) * 40)), y: x.rtt, hourLabel: x.label }));
+            cScatter2.data.datasets[1].data = r.map(x => ({ x: Math.min(100, Math.round(x.rainVal + (x.users / 40) * 40)), y: x.loss, hourLabel: x.label }));
             cScatter2.update();
 
             cEnergy.data.labels = r.map(x => x.label);
@@ -1265,44 +1371,92 @@
             cEnergy.data.datasets[2].data = r.map(x => x.soc);
             cEnergy.update();
 
+            // Explicaciones automáticas en lenguaje sencillo debajo de cada gráfica
+            const fullSpeedHours = r.filter(x => x.thr >= 4.5).length;
+            const minThr = Math.min(...r.map(x => x.thr));
+            const exp1 = document.getElementById('explain-scatter1');
+            if (exp1) {
+                exp1.innerHTML = minThr >= MODEL.cirMbps
+                    ? `<strong>Lectura rápida:</strong> En <strong>${fullSpeedHours} de las 24 horas</strong> se alcanza la velocidad máxima (~5 Mbps). Incluso en la hora más llena (${minThr.toFixed(2)} Mbps), supera el mínimo necesario (1.25 Mbps) para navegar y estudiar sin cortes.`
+                    : `<strong>Atención:</strong> En las horas pico la velocidad baja hasta <strong>${minThr.toFixed(2)} Mbps</strong> (debajo de 1.25 Mbps) por saturación de usuarios o lejanía de los nodos Mesh.`;
+            }
+
+            const maxRtt = Math.max(...r.map(x => x.rtt));
+            const maxLoss = Math.max(...r.map(x => x.loss));
+            const exp2 = document.getElementById('explain-scatter2');
+            if (exp2) {
+                exp2.innerHTML = (maxRtt < 40 && maxLoss < 1.0)
+                    ? `<strong>Lectura rápida:</strong> Todos los puntos están en la zona segura. El peor retraso del día es de apenas <strong>${maxRtt} ms</strong> (límite 40 ms) y la pérdida máxima es <strong>${maxLoss}%</strong>, ideal para videollamadas en vivo.`
+                    : `<strong>Atención:</strong> Bajo lluvia intensa o alta congestión el retraso sube hasta <strong>${maxRtt} ms</strong> y la pérdida alcanza <strong>${maxLoss}%</strong>, lo que puede causar pausas breves en video.`;
+            }
+
+            const minSoc = Math.min(...r.map(x => x.soc));
+            const exp3 = document.getElementById('explain-energy');
+            if (exp3) {
+                exp3.innerHTML = minSoc > 20
+                    ? `<strong>Lectura rápida:</strong> Los paneles solares recargan la batería durante el día y el nivel mínimo en la madrugada llega al <strong>${minSoc.toFixed(1)}%</strong>. La estación opera las 24 horas con energía limpia sin apagarse.`
+                    : `<strong>Alerta energética:</strong> Debido a la baja radiación solar, la batería desciende hasta el <strong>${minSoc.toFixed(1)}%</strong> en la noche; se requiere ahorro de nodos Mesh o mayor recurso solar.`;
+            }
+
             const net = Math.round(state.summary.totGen - state.summary.totCons);
             const pill = document.getElementById('energy-pill');
             pill.textContent = `Balance 24h: ${net >= 0 ? '+' : ''}${net} Wh`;
             pill.className = net >= 0
-                ? 'font-mono text-xs font-bold px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200'
-                : 'font-mono text-xs font-bold px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200';
+                ? 'font-mono text-xs font-bold px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0'
+                : 'font-mono text-xs font-bold px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 shrink-0';
         }
 
         function renderTable() {
-            document.getElementById('tbl-body').innerHTML = state.rows.map(r => `
-                <tr class="hover:bg-blue-50 cursor-pointer" onclick="pickHour(${r.h})">
-                    <td class="py-2 px-3 font-bold">${r.label}</td>
-                    <td class="py-2 px-3">
-                        <span class="px-1.5 py-0.5 rounded text-[10px] font-sans font-bold ${r.origin === 'REAL_OPEN_METEO' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+            const okCount = state.rows.filter(x => x.isOk).length;
+            const avgSpeed = (state.rows.reduce((a, b) => a + b.thr, 0) / 24).toFixed(2);
+            const minBat = Math.min(...state.rows.map(x => x.soc)).toFixed(0);
+            const sumEl = document.getElementById('bitacora-summary');
+            if (sumEl) {
+                sumEl.innerHTML = `En las 24 horas: <strong>${okCount} de 24 horas</strong> en estado óptimo • Velocidad media: <strong>${avgSpeed} Mbps por persona</strong> • Batería mínima: <strong>${minBat}%</strong>.`;
+            }
+
+            document.getElementById('tbl-body').innerHTML = state.rows.map(r => {
+                const isSelected = r.h === state.hour;
+                const rowCls = isSelected
+                    ? 'bg-blue-50/90 ring-1 ring-inset ring-blue-300 cursor-pointer'
+                    : 'hover:bg-slate-50 cursor-pointer';
+                const batColor = r.soc >= 50 ? 'text-emerald-700' : (r.soc >= 25 ? 'text-amber-700' : 'text-rose-600 font-bold');
+
+                return `
+                <tr class="${rowCls}" onclick="pickHour(${r.h})">
+                    <td class="py-2.5 px-3 font-bold whitespace-nowrap">
+                        ${r.label}
+                        ${isSelected ? '<span class="ml-1 px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9px] font-sans uppercase">Activa</span>' : ''}
+                    </td>
+                    <td class="py-2.5 px-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-sans font-bold ${r.origin === 'REAL_OPEN_METEO' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
                             ${r.origin === 'REAL_OPEN_METEO' ? 'REAL' : 'SIM'}
                         </span>
                     </td>
-                    <td class="py-2 px-3 text-right">${r.users}</td>
-                    <td class="py-2 px-3 text-right text-slate-600">${r.hspVal.toFixed(1)}h / ${r.rainVal}%</td>
-                    <td class="py-2 px-3 text-right">${r.leo}</td>
-                    <td class="py-2 px-3 text-right font-semibold text-blue-700">${r.thr.toFixed(2)} Mbps</td>
-                    <td class="py-2 px-3 text-right ${r.rtt >= 40 ? 'text-rose-600 font-bold' : ''}">${r.rtt} ms</td>
-                    <td class="py-2 px-3 text-right ${r.loss >= 1 ? 'text-rose-600 font-bold' : ''}">${r.loss}%</td>
-                    <td class="py-2 px-3 text-right text-amber-700">${r.gen}</td>
-                    <td class="py-2 px-3 text-right">${r.cons}</td>
-                    <td class="py-2 px-3 text-right text-emerald-700">${r.volt}V (${r.soc}%)</td>
-                    <td class="py-2 px-3 text-right">${r.devMir >= 0 ? '+' : ''}${r.devMir}%</td>
-                    <td class="py-2 px-3 text-center">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-sans font-bold ${r.isOk ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${r.isOk ? 'ÓPTIMO' : 'DESVÍO'}</span>
+                    <td class="py-2.5 px-3 text-right font-semibold">${r.users} <span class="text-[10px] text-slate-400 font-sans">usr</span></td>
+                    <td class="py-2.5 px-3 text-right text-slate-600">${r.hspVal.toFixed(1)}h • ${r.rainVal}%</td>
+                    <td class="py-2.5 px-3 text-right text-slate-700">${r.leo} <span class="text-[10px] text-slate-400">Mbps</span></td>
+                    <td class="py-2.5 px-3 text-right font-bold text-blue-700">${r.thr.toFixed(2)} Mbps</td>
+                    <td class="py-2.5 px-3 text-right ${r.rtt >= 40 ? 'text-rose-600 font-bold' : 'text-slate-700'}">${r.rtt} ms</td>
+                    <td class="py-2.5 px-3 text-right ${r.loss >= 1 ? 'text-rose-600 font-bold' : 'text-slate-700'}">${r.loss}%</td>
+                    <td class="py-2.5 px-3 text-right font-semibold text-amber-700">+${r.gen} Wh</td>
+                    <td class="py-2.5 px-3 text-right text-slate-600">-${r.cons} Wh</td>
+                    <td class="py-2.5 px-3 text-right font-semibold ${batColor}">${r.soc}% <span class="text-[10px] text-slate-400 font-normal">(${r.volt}V)</span></td>
+                    <td class="py-2.5 px-3 text-center">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-sans font-bold ${r.isOk ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                            ${r.isOk ? '✔ ÓPTIMO' : '⚠ DESVÍO'}
+                        </span>
                     </td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function pickHour(h) {
             state.hour = h;
             document.getElementById('inp-hour').value = h;
             syncLabels();
+            renderTable();
             updateBannerAndTopo();
             updateClientPhysics();
             notify(`Inspeccionando hora ${String(h).padStart(2, '0')}:00`);
