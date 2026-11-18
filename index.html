@@ -51,24 +51,6 @@
             </div>
 
             <div class="flex items-center gap-2 flex-wrap shrink-0">
-                <div class="flex items-center bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-                    <select id="sel-sample-interval" title="Intervalo entre muestras reales" class="bg-slate-800 text-amber-300 text-xs font-mono font-bold px-2.5 py-2 focus:outline-none cursor-pointer">
-                        <option value="3600">1h Real (24h)</option>
-                        <option value="900">15 min (6h)</option>
-                        <option value="60">1 min (24m)</option>
-                        <option value="5">5 seg (2m)</option>
-                        <option value="1" selected>1 seg (24s)</option>
-                    </select>
-                    <button id="btn-auto24" onclick="toggleAuto24Sweep()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer">
-                        <i id="auto24-icon" class="fa-solid fa-play"></i>
-                        <span id="auto24-label">Auto-Muestreo 24h</span>
-                    </button>
-                </div>
-                <button id="btn-rec" onclick="toggleRecording()" class="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-semibold rounded-xl transition flex items-center gap-2 cursor-pointer">
-                    <span id="rec-dot" class="w-2 h-2 rounded-full bg-white"></span>
-                    <span id="rec-label">Grabar Evidencia</span>
-                    <span id="rec-clock" class="hidden font-mono text-xs bg-rose-950 px-1.5 py-0.5 rounded">00:00</span>
-                </button>
                 <button onclick="downloadCSV()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-semibold rounded-xl transition flex items-center gap-2 cursor-pointer">
                     <i class="fa-solid fa-file-csv"></i><span>Exportar CSV</span>
                 </button>
@@ -1726,69 +1708,6 @@
             document.getElementById('ping-out').innerHTML = '<div class="text-slate-500"># Consola limpia. Presione "Iniciar Ping" o "Traceroute"...</div>';
             document.getElementById('ping-summary').textContent = 'Enviados: 0 | Recibidos: 0 | Perdidos: 0 (0.0%)';
             document.getElementById('ping-rtt-stats').textContent = 'RTT Mín/Prom/Máx: -- / -- / -- ms';
-        }
-
-        let sweepTimer = null;
-        function toggleAuto24Sweep() {
-            const btn = document.getElementById('btn-auto24');
-            const icon = document.getElementById('auto24-icon');
-            const lbl = document.getElementById('auto24-label');
-            if (sweepTimer) {
-                clearInterval(sweepTimer);
-                sweepTimer = null;
-                btn.className = 'px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer';
-                icon.className = 'fa-solid fa-play';
-                lbl.textContent = 'Auto-Muestreo 24h';
-                notify('Auto-Muestreo 24h detenido.');
-                return;
-            }
-            const stepSec = parseInt(document.getElementById('sel-sample-interval').value, 10) || 1;
-            let currentH = 0;
-            btn.className = 'px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer';
-            icon.className = 'fa-solid fa-stop';
-            lbl.textContent = 'Detener Muestreo';
-            notify(`Iniciando barrido horario 24h (1 muestra cada ${stepSec}s)...`, 'success');
-
-            const runStep = () => {
-                pickHour(currentH);
-                currentH++;
-                if (currentH >= 24) {
-                    clearInterval(sweepTimer);
-                    sweepTimer = null;
-                    btn.className = 'px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer';
-                    icon.className = 'fa-solid fa-play';
-                    lbl.textContent = 'Auto-Muestreo 24h';
-                    notify('Muestreo de las 24 horas completado.', 'success');
-                }
-            };
-            runStep();
-            sweepTimer = setInterval(runStep, stepSec * 1000);
-        }
-
-        let recTimer = null, recSeconds = 0;
-        function toggleRecording() {
-            const btn = document.getElementById('btn-rec');
-            const lbl = document.getElementById('rec-label');
-            const clk = document.getElementById('rec-clock');
-            if (recTimer) {
-                clearInterval(recTimer);
-                recTimer = null;
-                lbl.textContent = 'Grabar Evidencia';
-                clk.classList.add('hidden');
-                notify('Sesión de evidencia finalizada. Puede exportar el CSV.', 'success');
-                return;
-            }
-            recSeconds = 0;
-            lbl.textContent = 'Grabando';
-            clk.classList.remove('hidden');
-            clk.textContent = '00:00';
-            notify('Grabando telemetría experimental...', 'warn');
-            recTimer = setInterval(() => {
-                recSeconds++;
-                const mm = String(Math.floor(recSeconds / 60)).padStart(2, '0');
-                const ss = String(recSeconds % 60).padStart(2, '0');
-                clk.textContent = `${mm}:${ss}`;
-            }, 1000);
         }
 
         function downloadCSV() {
