@@ -6,6 +6,8 @@
     <title>Laboratorio de Simulación | Arquitectura Híbrida Rural</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
@@ -24,6 +26,7 @@
         body { overflow-x: hidden; }
         .math-box { background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border-left: 4px solid #2563eb; }
         input[type="range"] { accent-color: #2563eb; }
+        .leaflet-container { z-index: 10; font-family: 'Inter', sans-serif; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased">
@@ -48,6 +51,19 @@
             </div>
 
             <div class="flex items-center gap-2 flex-wrap shrink-0">
+                <div class="flex items-center bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+                    <select id="sel-sample-interval" title="Intervalo entre muestras reales" class="bg-slate-800 text-amber-300 text-xs font-mono font-bold px-2.5 py-2 focus:outline-none cursor-pointer">
+                        <option value="3600">1h Real (24h)</option>
+                        <option value="900">15 min (6h)</option>
+                        <option value="60">1 min (24m)</option>
+                        <option value="5">5 seg (2m)</option>
+                        <option value="1" selected>1 seg (24s)</option>
+                    </select>
+                    <button id="btn-auto24" onclick="toggleAuto24Sweep()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer">
+                        <i id="auto24-icon" class="fa-solid fa-play"></i>
+                        <span id="auto24-label">Auto-Muestreo 24h</span>
+                    </button>
+                </div>
                 <button id="btn-rec" onclick="toggleRecording()" class="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-semibold rounded-xl transition flex items-center gap-2 cursor-pointer">
                     <span id="rec-dot" class="w-2 h-2 rounded-full bg-white"></span>
                     <span id="rec-label">Grabar Evidencia</span>
@@ -69,9 +85,14 @@
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div>
-                    <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-sliders text-blue-600"></i> 1. Parámetros Operativos y Escenarios Experimentales
-                    </h2>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-blue-600"></i> 1. Parámetros Operativos y Escenarios Experimentales
+                        </h2>
+                        <span id="badge-data-origin" class="px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            ● Fuente Activa: Clima Real Satelital
+                        </span>
+                    </div>
                     <p class="text-xs text-slate-500 mt-0.5">Ajuste las condiciones de red, irradiación solar y clima para evaluar desvíos frente al diseño conceptual.</p>
                 </div>
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -93,7 +114,7 @@
                         <span class="text-xs font-bold text-slate-700"><i class="fa-solid fa-users text-blue-600 mr-1"></i>Usuarios</span>
                         <span id="lbl-users" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">25 usr</span>
                     </div>
-                    <input id="inp-users" type="range" min="1" max="40" value="25" oninput="onSliderChange()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <input id="inp-users" type="range" min="1" max="40" value="25" oninput="onSliderChange('network')" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
                     <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1"><span>1</span><span>Diseño: 40</span></div>
                 </div>
 
@@ -103,7 +124,7 @@
                         <span class="text-xs font-bold text-slate-700"><i class="fa-solid fa-sun text-amber-500 mr-1"></i>Recurso Solar</span>
                         <span id="lbl-hsp" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">4.5 HSP</span>
                     </div>
-                    <input id="inp-hsp" type="range" min="1.5" max="6.5" step="0.1" value="4.5" oninput="onSliderChange()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <input id="inp-hsp" type="range" min="1.5" max="6.5" step="0.1" value="4.5" oninput="onSliderChange('weather')" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
                     <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1"><span>1.5h</span><span>Diseño: 4.5h</span><span>6.5h</span></div>
                 </div>
 
@@ -113,7 +134,7 @@
                         <span class="text-xs font-bold text-slate-700"><i class="fa-solid fa-cloud-rain text-indigo-600 mr-1"></i>Rain Fade</span>
                         <span id="lbl-rain" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">8%</span>
                     </div>
-                    <input id="inp-rain" type="range" min="0" max="60" step="1" value="8" oninput="onSliderChange()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <input id="inp-rain" type="range" min="0" max="60" step="1" value="8" oninput="onSliderChange('weather')" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
                     <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1"><span>0%</span><span>30%</span><span>60%</span></div>
                 </div>
 
@@ -123,7 +144,7 @@
                         <span class="text-xs font-bold text-slate-700"><i class="fa-solid fa-wifi text-emerald-600 mr-1"></i>Nodos Mesh</span>
                         <span id="lbl-mesh" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">4 / 4</span>
                     </div>
-                    <input id="inp-mesh" type="range" min="1" max="4" step="1" value="4" oninput="onSliderChange()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <input id="inp-mesh" type="range" min="1" max="4" step="1" value="4" oninput="onSliderChange('network')" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
                     <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1"><span>1 nodo</span><span>2</span><span>3</span><span>4 (12W c/u)</span></div>
                 </div>
 
@@ -135,6 +156,88 @@
                     </div>
                     <input id="inp-hour" type="range" min="0" max="23" step="1" value="12" oninput="onHourChange()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
                     <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1"><span>00:00</span><span>12:00</span><span>23:00</span></div>
+                </div>
+            </div>
+
+            <!-- Telemetría Climática y Radiación Solar Real (Open-Meteo Colombia) -->
+            <div class="mt-4 pt-4 border-t border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-wrap">
+                    <span class="px-2.5 py-1 text-[10px] font-mono font-bold uppercase bg-sky-100 text-sky-800 rounded-lg flex items-center gap-1.5 w-fit">
+                        <i class="fa-solid fa-satellite"></i> Open-Meteo Live
+                    </span>
+                    <select id="sel-muni" onchange="onMunicipalityChange()" class="bg-slate-50 border border-slate-300 text-slate-900 text-xs sm:text-sm font-medium rounded-xl p-2 cursor-pointer">
+                        <option value="chigorodo">Chigorodó, Antioquia (Urabá • 7.67°N)</option>
+                        <option value="tumaco">Tumaco, Nariño (Pacífico • 1.81°N)</option>
+                        <option value="uribia">Uribia, La Guajira (Alta Guajira • 11.71°N)</option>
+                        <option value="guaviare">San José del Guaviare (Amazonía • 2.57°N)</option>
+                        <option value="miraflores">Miraflores, Boyacá (Andina • 5.20°N)</option>
+                        <option value="carreno">Puerto Carreño, Vichada (Orinoquía • 6.19°N)</option>
+                        <option value="custom" hidden>Ubicación Personalizada en Mapa</option>
+                    </select>
+                    <button id="btn-weather" onclick="syncRealWeather()" class="px-3.5 py-2 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-2 cursor-pointer w-fit">
+                        <i class="fa-solid fa-cloud-sun-rain"></i><span>Sincronizar Clima Satelital en Vivo</span>
+                    </button>
+                </div>
+
+                <!-- Tarjeta Meteorológica Satelital -->
+                <div id="weather-telemetry-bar" class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-xl font-mono text-xs border border-slate-800 transition-colors">
+                    <div>
+                        <div id="met-hsp-lbl" class="text-[10px] text-slate-400">HSP Real / Día</div>
+                        <div id="met-hsp" class="font-bold text-amber-400">4.50 HSP</div>
+                    </div>
+                    <div class="border-l border-slate-700 pl-2.5">
+                        <div id="met-rad-lbl" class="text-[10px] text-slate-400">Irradiancia</div>
+                        <div id="met-rad" class="font-bold text-yellow-300">680 W/m²</div>
+                    </div>
+                    <div class="border-l border-slate-700 pl-2.5">
+                        <div id="met-rain-lbl" class="text-[10px] text-slate-400">Lluvia / Nubes</div>
+                        <div id="met-rain" class="font-bold text-sky-300">0.0 mm • 20%</div>
+                    </div>
+                    <div class="border-l border-slate-700 pl-2.5">
+                        <div id="met-src-lbl" class="text-[10px] text-slate-400">Fuente / Temp</div>
+                        <div id="met-src" class="font-bold text-emerald-400">Live • 28°C</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- GEMELO DIGITAL GEOGRÁFICO INTERACTIVO (LEAFLET.JS) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="px-2 py-0.5 text-[10px] font-mono font-bold uppercase bg-emerald-100 text-emerald-800 rounded">Gemelo Digital Geográfico • Leaflet GIS</span>
+                        <span id="gis-coords" class="font-mono text-[11px] text-slate-500">Lat: 7.6667, Lon: -76.6811</span>
+                    </div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900 mt-1 flex items-center gap-2">
+                        <i class="fa-solid fa-map-location-dot text-emerald-600"></i> Despliegue Topográfico: Antena LEO, Nodos Wi-Fi Mesh 802.11ax y Cliente
+                    </h2>
+                    <p class="text-xs text-slate-500">Busque cualquier municipio/coordenada o haga clic libremente en el mapa para trasladar toda la estación y consultar su clima real.</p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap shrink-0">
+                    <div class="flex items-center bg-slate-50 border border-slate-300 rounded-xl overflow-hidden">
+                        <input id="inp-geo-search" type="text" placeholder="Ej: Mitú, 4.63,-69.23 o 4°38'N 69°14'O" onkeydown="if(event.key==='Enter') searchGeoLocation()" class="px-3 py-1.5 text-xs bg-transparent text-slate-800 focus:outline-none w-48 sm:w-56">
+                        <button id="btn-geo-search" onclick="searchGeoLocation()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold cursor-pointer">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
+                    <button id="btn-map-click-mode" onclick="toggleMapClickMode()" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded-xl border border-amber-300 cursor-pointer" title="Haga clic en cualquier lugar del mapa para mover la estación">
+                        <i class="fa-solid fa-location-crosshairs mr-1"></i>Clic en Mapa: ON
+                    </button>
+                    <button onclick="resetMapTopology()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-xl border border-slate-300 cursor-pointer">
+                        <i class="fa-solid fa-arrows-to-dot mr-1"></i>Centrar Nodos
+                    </button>
+                    <div class="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl font-mono text-xs text-emerald-900">
+                        Cliente → <strong id="gis-nearest">Nodo 1</strong>: <strong id="gis-dist">25 m</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="relative w-full h-80 sm:h-96 bg-slate-200">
+                <div id="ruralMap" class="w-full h-full"></div>
+                <div class="absolute bottom-3 left-3 z-[20] bg-slate-900/90 text-white px-3 py-2 rounded-xl text-[11px] font-mono border border-slate-700 space-y-1 pointer-events-none">
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> Central LEO + QoS + FV 1.45kWp</div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Nodo Mesh 802.11ax (Radio 150m)</div>
+                    <div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Dispositivo Cliente Arrastrable</div>
                 </div>
             </div>
         </section>
@@ -202,7 +305,7 @@
                         <label for="cli-dist" class="text-xs font-bold text-slate-700">Distancia al Nodo Wi-Fi Mesh Outdoor (IEEE 802.11ax):</label>
                         <span id="lbl-dist" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">25 m</span>
                     </div>
-                    <input id="cli-dist" type="range" min="5" max="180" step="5" value="25" oninput="updateClientPhysics()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+                    <input id="cli-dist" type="range" min="5" max="180" step="1" value="25" oninput="onManualDistChange()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
                     <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
                         <span>5m (Óptimo)</span><span>60m (Media)</span><span>120m (Borde)</span><span>180m (Crítico)</span>
                     </div>
@@ -415,7 +518,9 @@
                     <thead class="bg-slate-100 sticky top-0 text-[11px] font-bold uppercase text-slate-600 border-b border-slate-200">
                         <tr>
                             <th class="py-2.5 px-3">Hora</th>
+                            <th class="py-2.5 px-3">Origen</th>
                             <th class="py-2.5 px-3 text-right">Usr</th>
+                            <th class="py-2.5 px-3 text-right">HSP / Rain</th>
                             <th class="py-2.5 px-3 text-right">LEO (Mbps)</th>
                             <th class="py-2.5 px-3 text-right">Throughput</th>
                             <th class="py-2.5 px-3 text-right">RTT (ms)</th>
@@ -458,11 +563,16 @@
 
         const state = {
             scenario: 'nominal',
+            muni: 'chigorodo',
+            customLoc: { name: 'Ubicación Personalizada', lat: 7.6667, lon: -76.6811, baseHsp: 4.5, baseTemp: 26 },
+            mapClickMove: true,
             users: 25,
             hsp: 4.5,
             rainPct: 8,
             meshNodes: 4,
             hour: 12,
+            dataOrigin: 'REAL_OPEN_METEO',
+            hourlyRealWeather: null,
             rows: [],
             summary: {},
             device: 'laptop',
@@ -473,6 +583,19 @@
             cliLoss: 0.2,
             activeTab: 'video'
         };
+
+        const MUNICIPALITIES = {
+            chigorodo:  { name: 'Chigorodó, Antioquia', lat: 7.6667,  lon: -76.6811, baseHsp: 4.4, baseTemp: 28 },
+            tumaco:     { name: 'Tumaco, Nariño',       lat: 1.8058,  lon: -78.7647, baseHsp: 3.9, baseTemp: 27 },
+            uribia:     { name: 'Uribia, La Guajira',   lat: 11.7139, lon: -72.2658, baseHsp: 5.8, baseTemp: 33 },
+            guaviare:   { name: 'San José del Guaviare',lat: 2.5729,  lon: -72.6459, baseHsp: 4.3, baseTemp: 29 },
+            miraflores: { name: 'Miraflores, Boyacá',   lat: 5.1956,  lon: -73.1444, baseHsp: 4.1, baseTemp: 21 },
+            carreno:    { name: 'Puerto Carreño, Vichada',lat: 6.1890,lon: -67.4859, baseHsp: 5.2, baseTemp: 32 }
+        };
+
+        function getActiveLocation() {
+            return state.muni === 'custom' ? state.customLoc : (MUNICIPALITIES[state.muni] || MUNICIPALITIES.chigorodo);
+        }
 
         let cScatter1 = null, cScatter2 = null, cEnergy = null;
         let tick = 0;
@@ -495,49 +618,528 @@
         // =====================================================================
         // CONTROLES Y ESCENARIOS
         // =====================================================================
-        function loadScenario(key) {
-            state.scenario = key;
-            const map = {
-                nominal:    { u: 25, h: 4.5, r: 8,  m: 4, hr: 12, t: 'Operación Nominal cargada' },
-                congestion: { u: 40, h: 4.5, r: 12, m: 4, hr: 10, t: 'Alta Congestión (40 usuarios)' },
-                rain_fade:  { u: 28, h: 3.0, r: 48, m: 4, hr: 15, t: 'Rain Fade Ku/Ka cargado' },
-                low_solar:  { u: 24, h: 2.2, r: 25, m: 4, hr: 22, t: 'Baja Irradiación (2.2 HSP)' },
-                mesh_fault: { u: 32, h: 4.2, r: 10, m: 2, hr: 14, t: 'Falla de Nodos Mesh (2/4)' }
-            };
-            const s = map[key] || map.nominal;
-            state.users = s.u; state.hsp = s.h; state.rainPct = s.r; state.meshNodes = s.m; state.hour = s.hr;
-            document.getElementById('inp-users').value = s.u;
-            document.getElementById('inp-hsp').value = s.h;
-            document.getElementById('inp-rain').value = s.r;
-            document.getElementById('inp-mesh').value = s.m;
-            document.getElementById('inp-hour').value = s.hr;
-            syncLabels();
-            runSimulation(false);
-            notify(s.t);
-        }
-
-        function onSliderChange() {
-            state.users = parseInt(document.getElementById('inp-users').value, 10);
-            state.hsp = parseFloat(document.getElementById('inp-hsp').value);
-            state.rainPct = parseInt(document.getElementById('inp-rain').value, 10);
-            state.meshNodes = parseInt(document.getElementById('inp-mesh').value, 10);
-            syncLabels();
-            runSimulation(false);
-        }
-
-        function onHourChange() {
-            state.hour = parseInt(document.getElementById('inp-hour').value, 10);
-            syncLabels();
-            updateBannerAndTopo();
-            updateClientPhysics();
-        }
-
         function syncLabels() {
             document.getElementById('lbl-users').textContent = `${state.users} usr`;
             document.getElementById('lbl-hsp').textContent = `${state.hsp.toFixed(1)} HSP`;
             document.getElementById('lbl-rain').textContent = `${state.rainPct}%`;
             document.getElementById('lbl-mesh').textContent = `${state.meshNodes} / 4`;
             document.getElementById('lbl-hour').textContent = `${String(state.hour).padStart(2, '0')}:00`;
+
+            const badge = document.getElementById('badge-data-origin');
+            if (badge) {
+                if (state.dataOrigin === 'REAL_OPEN_METEO') {
+                    badge.className = 'px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
+                    badge.textContent = '● Fuente Activa: Clima Real Satelital';
+                } else {
+                    badge.className = 'px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase rounded-full bg-amber-100 text-amber-800 border border-amber-300';
+                    badge.textContent = '▲ Fuente Activa: Simulación Manual';
+                }
+            }
+
+            // Actualizar barra negra de telemetría cuando el usuario manipula valores simulados
+            const bar = document.getElementById('weather-telemetry-bar');
+            if (bar && state.dataOrigin !== 'REAL_OPEN_METEO') {
+                const solarCurve = [0,0,0,0,0,0,0.02,0.06,0.1,0.14,0.16,0.17,0.15,0.1,0.06,0.03,0.01,0,0,0,0,0,0,0];
+                const estWm2 = Math.round(state.hsp * 1000 * solarCurve[state.hour]);
+                const estMm = Math.max(0, (state.rainPct - 5) / 9.5);
+                const estClouds = Math.min(100, Math.round(state.rainPct * 1.55));
+
+                bar.className = 'grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-xl font-mono text-xs border-2 border-amber-500/80 transition-colors';
+                document.getElementById('met-hsp-lbl').textContent = 'HSP Simulado';
+                document.getElementById('met-hsp').textContent = `${state.hsp.toFixed(2)} HSP`;
+                document.getElementById('met-rad-lbl').textContent = 'Irrad. Simulada';
+                document.getElementById('met-rad').textContent = `~${estWm2} W/m²`;
+                document.getElementById('met-rain-lbl').textContent = 'Rain Fade Sim.';
+                document.getElementById('met-rain').textContent = `${state.rainPct}% (${estMm.toFixed(1)} mm)`;
+                document.getElementById('met-src-lbl').textContent = 'Estado / Modo';
+                const srcEl = document.getElementById('met-src');
+                srcEl.className = 'font-bold text-amber-400';
+                srcEl.textContent = 'SIMULADO MANUAL';
+            }
+        }
+
+        function onSliderChange(source = 'weather') {
+            if (source === 'weather') {
+                state.dataOrigin = 'SIMULADO_MANUAL';
+            }
+            state.users = parseInt(document.getElementById('inp-users').value, 10);
+            state.hsp = parseFloat(document.getElementById('inp-hsp').value);
+            state.rainPct = parseInt(document.getElementById('inp-rain').value, 10);
+            state.meshNodes = parseInt(document.getElementById('inp-mesh').value, 10);
+            syncLabels();
+            updateMapNodesState();
+            runSimulation(false);
+        }
+
+        function onHourChange() {
+            state.hour = parseInt(document.getElementById('inp-hour').value, 10);
+            if (state.dataOrigin === 'REAL_OPEN_METEO' && Array.isArray(state.hourlyRealWeather) && state.hourlyRealWeather[state.hour]) {
+                const hw = state.hourlyRealWeather[state.hour];
+                state.rainPct = hw.rainFade;
+                document.getElementById('inp-rain').value = hw.rainFade;
+                document.getElementById('met-rad').textContent = `${Math.round(hw.radWm2)} W/m²`;
+                document.getElementById('met-rain').textContent = `${hw.precipMm.toFixed(1)} mm • ${hw.clouds}%`;
+            }
+            syncLabels();
+            updateBannerAndTopo();
+            updateClientPhysics();
+        }
+
+        function loadScenario(sc) {
+            state.scenario = sc;
+            state.dataOrigin = 'SIMULADO_MANUAL';
+            const presets = {
+                nominal:    { users: 25, hsp: 4.5, rain: 8,  mesh: 4 },
+                congestion: { users: 40, hsp: 4.5, rain: 10, mesh: 4 },
+                rain_fade:  { users: 25, hsp: 3.8, rain: 45, mesh: 4 },
+                low_solar:  { users: 25, hsp: 2.2, rain: 20, mesh: 4 },
+                mesh_fault: { users: 28, hsp: 4.5, rain: 10, mesh: 2 }
+            };
+            const p = presets[sc] || presets.nominal;
+            state.users = p.users; state.hsp = p.hsp; state.rainPct = p.rain; state.meshNodes = p.mesh;
+            document.getElementById('inp-users').value = p.users;
+            document.getElementById('inp-hsp').value = p.hsp;
+            document.getElementById('inp-rain').value = p.rain;
+            document.getElementById('inp-mesh').value = p.mesh;
+            syncLabels();
+            updateMapNodesState();
+            runSimulation(true);
+        }
+
+        function onMunicipalityChange() {
+            state.muni = document.getElementById('sel-muni').value;
+            const m = getActiveLocation();
+            document.getElementById('gis-coords').textContent = `Lat: ${m.lat.toFixed(4)}, Lon: ${m.lon.toFixed(4)}`;
+            resetMapTopology();
+            syncRealWeather();
+        }
+
+        function setCustomGeoPoint(lat, lon, label) {
+            state.muni = 'custom';
+            state.customLoc = { name: label, lat, lon, baseHsp: 4.5, baseTemp: 26 };
+            const sel = document.getElementById('sel-muni');
+            const opt = sel.querySelector('option[value="custom"]');
+            opt.hidden = false;
+            opt.textContent = `📍 ${label}`;
+            sel.value = 'custom';
+            document.getElementById('gis-coords').textContent = `${label} (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+            resetMapTopology();
+            syncRealWeather();
+        }
+
+        function toggleMapClickMode() {
+            state.mapClickMove = !state.mapClickMove;
+            const btn = document.getElementById('btn-map-click-mode');
+            if (state.mapClickMove) {
+                btn.className = 'px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded-xl border border-amber-300 cursor-pointer';
+                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs mr-1"></i>Clic en Mapa: ON';
+                notify('Modo clic en mapa activado: toque cualquier lugar para mover la estación.');
+            } else {
+                btn.className = 'px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-xl border border-slate-300 cursor-pointer';
+                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs mr-1"></i>Clic en Mapa: OFF';
+            }
+        }
+
+        function onManualDistChange() {
+            const dist = parseInt(document.getElementById('cli-dist').value, 10);
+            state.distM = dist;
+            moveClientMarkerToDistance(dist);
+            updateClientPhysics();
+        }
+
+        function parseCoordinatesInput(raw) {
+            // 1. Formato decimal: "4.6333, -69.2333"
+            const decMatch = raw.match(/^(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)$/);
+            if (decMatch) {
+                const lat = parseFloat(decMatch[1]);
+                const lon = parseFloat(decMatch[2]);
+                if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) return { lat, lon };
+            }
+
+            // 2. Formato DMS (Grados, Minutos, Segundos): "4°38′00″ N, 69°14′00″ O" (acepta N/S/E/W/O y distintos símbolos de comillas)
+            const dmsRegex = /(\d+(?:\.\d+)?)\s*[°º]\s*(?:(\d+(?:\.\d+)?)\s*[′'’]\s*)?(?:(\d+(?:\.\d+)?)\s*[″"”]?\s*)?([NSEWO])\s*[,;\s]+\s*(\d+(?:\.\d+)?)\s*[°º]\s*(?:(\d+(?:\.\d+)?)\s*[′'’]\s*)?(?:(\d+(?:\.\d+)?)\s*[″"”]?\s*)?([NSEWO])/i;
+            const m = raw.match(dmsRegex);
+            if (m) {
+                const toDec = (d, min, sec, dir) => {
+                    let val = parseFloat(d) + (parseFloat(min || 0) / 60) + (parseFloat(sec || 0) / 3600);
+                    if (/[SWO]/i.test(dir)) val = -val;
+                    return val;
+                };
+                let c1 = toDec(m[1], m[2], m[3], m[4]);
+                let c2 = toDec(m[5], m[6], m[7], m[8]);
+                const isFirstLat = /[NS]/i.test(m[4]);
+                const lat = isFirstLat ? c1 : c2;
+                const lon = isFirstLat ? c2 : c1;
+                if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) return { lat, lon };
+            }
+            return null;
+        }
+
+        async function searchGeoLocation() {
+            const q = document.getElementById('inp-geo-search').value.trim();
+            if (!q) { notify('Escriba un departamento, municipio o coordenadas (ej. Vichada o 4°38′00″ N, 69°14′00″ O).', 'warn'); return; }
+
+            // 1. Detectar coordenadas decimales o sexagesimales (DMS)
+            const parsedCoords = parseCoordinatesInput(q);
+            if (parsedCoords) {
+                const { lat, lon } = parsedCoords;
+                setCustomGeoPoint(lat, lon, `Coordenadas ${lat.toFixed(4)}°, ${lon.toFixed(4)}°`);
+                return;
+            }
+
+            // 2. Diccionario rápido de departamentos y municipios rurales de Colombia (fallback instantáneo)
+            const norm = q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const CO_REGIONS = {
+                'vichada': { lat: 4.4234, lon: -69.2878, name: 'Vichada, Colombia' },
+                'cumaribo': { lat: 4.4461, lon: -69.7964, name: 'Cumaribo, Vichada' },
+                'la primavera': { lat: 5.4906, lon: -70.4092, name: 'La Primavera, Vichada' },
+                'santa rosalia': { lat: 5.1258, lon: -70.8594, name: 'Santa Rosalía, Vichada' },
+                'puerto carreno': { lat: 6.1890, lon: -67.4859, name: 'Puerto Carreño, Vichada' },
+                'vaupes': { lat: 1.2537, lon: -70.2336, name: 'Mitú, Vaupés' },
+                'mitu': { lat: 1.2537, lon: -70.2336, name: 'Mitú, Vaupés' },
+                'guainia': { lat: 3.8653, lon: -67.9239, name: 'Inírida, Guainía' },
+                'inirida': { lat: 3.8653, lon: -67.9239, name: 'Inírida, Guainía' },
+                'amazonas': { lat: -4.2153, lon: -69.9406, name: 'Leticia, Amazonas' },
+                'leticia': { lat: -4.2153, lon: -69.9406, name: 'Leticia, Amazonas' },
+                'guaviare': { lat: 2.5729, lon: -72.6459, name: 'San José del Guaviare' },
+                'choco': { lat: 5.6947, lon: -76.6611, name: 'Quibdó, Chocó' },
+                'quibdo': { lat: 5.6947, lon: -76.6611, name: 'Quibdó, Chocó' },
+                'putumayo': { lat: 1.1486, lon: -76.6464, name: 'Mocoa, Putumayo' },
+                'caqueta': { lat: 1.6144, lon: -75.6062, name: 'Florencia, Caquetá' },
+                'arauca': { lat: 7.0847, lon: -70.7591, name: 'Arauca, Arauca' },
+                'casanare': { lat: 5.3378, lon: -72.3959, name: 'Yopal, Casanare' },
+                'meta': { lat: 4.1420, lon: -73.6266, name: 'Villavicencio, Meta' },
+                'la guajira': { lat: 11.5444, lon: -72.9072, name: 'Riohacha, La Guajira' },
+                'guajira': { lat: 11.7139, lon: -72.2658, name: 'Uribia, La Guajira' }
+            };
+            if (CO_REGIONS[norm]) {
+                const reg = CO_REGIONS[norm];
+                setCustomGeoPoint(reg.lat, reg.lon, reg.name);
+                return;
+            }
+
+            // 3. Geocodificación vía Open-Meteo + respaldo Nominatim (OpenStreetMap)
+            const btn = document.getElementById('btn-geo-search');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            try {
+                const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=es&format=json`;
+                const res = await fetch(geoUrl);
+                const data = res.ok ? await res.json() : {};
+                if (data.results && data.results.length) {
+                    const place = data.results.find(r => r.country_code === 'CO') || data.results[0];
+                    const fullName = [place.name, place.admin1, place.country_code].filter(Boolean).join(', ');
+                    setCustomGeoPoint(place.latitude, place.longitude, fullName);
+                    return;
+                }
+
+                // Respaldo Nominatim para departamentos, corregimientos y veredas de Colombia
+                const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Colombia')}&limit=1`;
+                const nomRes = await fetch(nomUrl);
+                const nomData = nomRes.ok ? await nomRes.json() : [];
+                if (nomData && nomData.length) {
+                    setCustomGeoPoint(parseFloat(nomData[0].lat), parseFloat(nomData[0].lon), nomData[0].display_name.split(',').slice(0, 2).join(','));
+                    return;
+                }
+
+                notify(`No se encontró "${q}". Pruebe con el municipio (ej. Cumaribo) o coordenadas.`, 'warn');
+            } catch (e) {
+                notify('Error buscando ubicación. Puede ingresar coordenadas directas (ej. 4.42, -69.28).', 'warn');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i>';
+            }
+        }
+
+        async function syncRealWeather() {
+            const m = getActiveLocation();
+            const btn = document.getElementById('btn-weather');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Consultando Satélite...</span>';
+
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${m.lat}&longitude=${m.lon}&current=precipitation,cloud_cover,shortwave_radiation,temperature_2m&hourly=shortwave_radiation,precipitation,cloud_cover&daily=shortwave_radiation_sum,precipitation_sum&forecast_days=1&timezone=America/Bogota`;
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+
+                const radSumMj = (data.daily && data.daily.shortwave_radiation_sum && data.daily.shortwave_radiation_sum[0]) || (m.baseHsp * 3.6);
+                const realHsp = Math.max(1.5, Math.min(6.5, Number((radSumMj / 3.6).toFixed(2))));
+                const instRad = data.current ? Math.round(data.current.shortwave_radiation || 0) : 520;
+                const precipMm = data.current ? Number(data.current.precipitation || 0) : 0;
+                const clouds = data.current ? Math.round(data.current.cloud_cover || 0) : 25;
+                const temp = data.current ? Math.round(data.current.temperature_2m || m.baseTemp) : m.baseTemp;
+
+                // Guardar serie horaria real de 24 horas (irradiancia W/m2, precipitación mm/h y nubosidad %)
+                if (data.hourly && Array.isArray(data.hourly.shortwave_radiation)) {
+                    state.hourlyRealWeather = Array.from({ length: 24 }, (_, h) => {
+                        const radWm2 = Number(data.hourly.shortwave_radiation[h] || 0);
+                        const pMm = Number((data.hourly.precipitation && data.hourly.precipitation[h]) || 0);
+                        const cld = Number((data.hourly.cloud_cover && data.hourly.cloud_cover[h]) || 0);
+                        const rf = Math.min(60, Math.max(2, Math.round(pMm * 9.5 + (cld > 75 ? (cld - 75) * 0.45 : cld * 0.08))));
+                        return { radWm2, precipMm: pMm, clouds: cld, rainFade: rf };
+                    });
+                }
+
+                // Cálculo físico de atenuación Ku/Ka (Rain Fade) por precipitación (mm/h) y nubosidad densa
+                const calcRainFade = Math.min(60, Math.max(2, Math.round(precipMm * 9.5 + (clouds > 75 ? (clouds - 75) * 0.45 : clouds * 0.08))));
+
+                // Sincronizar también la hora actual real de Colombia (America/Bogota)
+                const bogotaHourStr = new Date().toLocaleString('en-US', { timeZone: 'America/Bogota', hour: 'numeric', hour12: false });
+                const currentBogotaHour = Math.max(0, Math.min(23, parseInt(bogotaHourStr, 10) || 12));
+
+                state.dataOrigin = 'REAL_OPEN_METEO';
+                state.hour = currentBogotaHour;
+                state.hsp = realHsp;
+                state.rainPct = calcRainFade;
+                document.getElementById('inp-hour').value = currentBogotaHour;
+                document.getElementById('inp-hsp').value = realHsp;
+                document.getElementById('inp-rain').value = calcRainFade;
+                syncLabels();
+
+                const bar = document.getElementById('weather-telemetry-bar');
+                if (bar) bar.className = 'grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-xl font-mono text-xs border border-emerald-500/60 transition-colors';
+                document.getElementById('met-hsp-lbl').textContent = 'HSP Real / Día';
+                document.getElementById('met-hsp').textContent = `${realHsp.toFixed(2)} HSP`;
+                document.getElementById('met-rad-lbl').textContent = 'Irradiancia Real';
+                document.getElementById('met-rad').textContent = `${instRad} W/m²`;
+                document.getElementById('met-rain-lbl').textContent = 'Lluvia / Nubes';
+                document.getElementById('met-rain').textContent = `${precipMm.toFixed(1)} mm • ${clouds}%`;
+                document.getElementById('met-src-lbl').textContent = 'Fuente / Temp';
+                const srcEl = document.getElementById('met-src');
+                srcEl.className = 'font-bold text-emerald-400';
+                srcEl.textContent = `Live • ${temp}°C`;
+
+                runSimulation(false);
+                notify(`Clima real en vivo (${String(currentBogotaHour).padStart(2, '0')}:00) sincronizado para ${m.name}.`, 'success');
+            } catch (err) {
+                // Fallback resiliente si no hay acceso a red
+                state.dataOrigin = 'SIMULADO_MANUAL';
+                state.hourlyRealWeather = null;
+                state.hsp = m.baseHsp;
+                state.rainPct = m.muni === 'tumaco' ? 24 : 10;
+                document.getElementById('inp-hsp').value = state.hsp;
+                document.getElementById('inp-rain').value = state.rainPct;
+                syncLabels();
+
+                document.getElementById('met-hsp').textContent = `${m.baseHsp.toFixed(2)} HSP`;
+                document.getElementById('met-rad').textContent = `~610 W/m²`;
+                document.getElementById('met-rain').textContent = `Histórico • 30%`;
+                document.getElementById('met-src').textContent = `Offline • ${m.baseTemp}°C`;
+
+                runSimulation(false);
+                notify(`Modo respaldo climatológico aplicado para ${m.name}.`, 'warn');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-sun-rain"></i><span>Sincronizar Clima Satelital en Vivo</span>';
+            }
+        }
+
+        // =====================================================================
+        // GEMELO DIGITAL GEOGRÁFICO (LEAFLET.JS)
+        // =====================================================================
+        let map = null;
+        let centralMarker = null;
+        let clientMarker = null;
+        let meshMarkers = [];
+        let meshCircles = [];
+        let meshLines = [];
+        let clientLinkLine = null;
+
+        function makePinIcon(color, faIcon, label) {
+            return L.divIcon({
+                className: 'custom-gis-pin',
+                html: `<div style="display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);">
+                    <div style="background:${color};color:#fff;width:30px;height:30px;border-radius:9999px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,0.45);font-size:13px;">
+                        <i class="fa-solid ${faIcon}"></i>
+                    </div>
+                    <span style="margin-top:2px;background:rgba(15,23,42,0.88);color:#fff;padding:1px 5px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap;">${label}</span>
+                </div>`,
+                iconSize: [0, 0]
+            });
+        }
+
+        function initRuralMap() {
+            const m = getActiveLocation();
+            map = L.map('ruralMap', { scrollWheelZoom: true }).setView([m.lat, m.lon], 15);
+
+            const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '&copy; Esri Satelital'
+            });
+            const esriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '&copy; Esri Street Map'
+            });
+            esriSat.addTo(map);
+            L.control.layers({ 'Vista Satelital (Terreno)': esriSat, 'Mapa Vías / Veredas': esriStreet }).addTo(map);
+
+            map.on('click', (e) => {
+                if (!state.mapClickMove) return;
+                setCustomGeoPoint(e.latlng.lat, e.latlng.lng, `Sitio Rural (${e.latlng.lat.toFixed(3)}°, ${e.latlng.lng.toFixed(3)}°)`);
+            });
+
+            centralMarker = L.marker([m.lat, m.lon], {
+                draggable: true,
+                icon: makePinIcon('#2563eb', 'fa-satellite-dish', 'Central LEO + FV')
+            }).addTo(map).bindPopup('<b>Edificación Comunitaria</b><br>Terminal LEO + Gateway QoS + Planta Solar 1.45 kWp');
+
+            centralMarker.on('drag', recalculateGisLinks);
+            centralMarker.on('dragend', () => {
+                const pos = centralMarker.getLatLng();
+                state.muni = 'custom';
+                state.customLoc = { name: `Estación (${pos.lat.toFixed(3)}°, ${pos.lng.toFixed(3)}°)`, lat: pos.lat, lon: pos.lng, baseHsp: 4.5, baseTemp: 26 };
+                const sel = document.getElementById('sel-muni');
+                const opt = sel.querySelector('option[value="custom"]');
+                opt.hidden = false;
+                opt.textContent = `📍 ${state.customLoc.name}`;
+                sel.value = 'custom';
+                document.getElementById('gis-coords').textContent = `${state.customLoc.name} (${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)})`;
+                syncRealWeather();
+            });
+
+            const offsets = [
+                [0.00075, -0.00085],
+                [0.00080,  0.00085],
+                [-0.00075, -0.00080],
+                [-0.00078,  0.00088]
+            ];
+
+            offsets.forEach((off, idx) => {
+                const pos = [m.lat + off[0], m.lon + off[1]];
+                const mk = L.marker(pos, {
+                    draggable: true,
+                    icon: makePinIcon('#059669', 'fa-wifi', `Mesh ${idx + 1}`)
+                }).addTo(map).bindPopup(`<b>Nodo Wi-Fi Mesh ${idx + 1}</b><br>IEEE 802.11ax Outdoor (12W)`);
+
+                const circle = L.circle(pos, {
+                    radius: 150,
+                    color: '#10b981',
+                    fillColor: '#10b981',
+                    fillOpacity: 0.12,
+                    weight: 1.5
+                }).addTo(map);
+
+                const line = L.polyline([[m.lat, m.lon], pos], {
+                    color: '#10b981',
+                    weight: 2.5,
+                    dashArray: '6, 6'
+                }).addTo(map);
+
+                mk.on('drag', recalculateGisLinks);
+                meshMarkers.push(mk);
+                meshCircles.push(circle);
+                meshLines.push(line);
+            });
+
+            clientMarker = L.marker([m.lat + 0.00095, m.lon - 0.00070], {
+                draggable: true,
+                icon: makePinIcon('#d97706', 'fa-laptop', 'Cliente Prueba')
+            }).addTo(map).bindPopup('<b>Dispositivo Cliente de Prueba</b><br>Arrástreme para probar cobertura Wi-Fi Mesh');
+
+            clientLinkLine = L.polyline([[m.lat + 0.00075, m.lon - 0.00085], clientMarker.getLatLng()], {
+                color: '#f59e0b',
+                weight: 2.5
+            }).addTo(map);
+
+            clientMarker.on('drag', recalculateGisLinks);
+            updateMapNodesState();
+            recalculateGisLinks();
+        }
+
+        function resetMapTopology() {
+            if (!map) return;
+            const m = getActiveLocation();
+            map.setView([m.lat, m.lon], Math.max(map.getZoom(), 15));
+            centralMarker.setLatLng([m.lat, m.lon]);
+
+            const offsets = [
+                [0.00075, -0.00085],
+                [0.00080,  0.00085],
+                [-0.00075, -0.00080],
+                [-0.00078,  0.00088]
+            ];
+            meshMarkers.forEach((mk, idx) => mk.setLatLng([m.lat + offsets[idx][0], m.lon + offsets[idx][1]]));
+            clientMarker.setLatLng([m.lat + 0.00095, m.lon - 0.00070]);
+            updateMapNodesState();
+            recalculateGisLinks();
+        }
+
+        function updateMapNodesState() {
+            if (!meshMarkers.length) return;
+            meshMarkers.forEach((mk, idx) => {
+                const active = idx < state.meshNodes;
+                mk.setIcon(makePinIcon(active ? '#059669' : '#dc2626', active ? 'fa-wifi' : 'fa-triangle-exclamation', active ? `Mesh ${idx + 1}` : `Mesh ${idx + 1} (OFF)`));
+                meshCircles[idx].setStyle({
+                    color: active ? '#10b981' : '#dc2626',
+                    fillColor: active ? '#10b981' : '#dc2626',
+                    fillOpacity: active ? 0.12 : 0.04
+                });
+            });
+            recalculateGisLinks();
+        }
+
+        function recalculateGisLinks() {
+            if (!map || !centralMarker || !clientMarker) return;
+            const cPos = centralMarker.getLatLng();
+            const cliPos = clientMarker.getLatLng();
+
+            let bestDist = Infinity;
+            let bestPos = cPos;
+            let bestLabel = 'Central LEO';
+
+            meshMarkers.forEach((mk, idx) => {
+                const mPos = mk.getLatLng();
+                const active = idx < state.meshNodes;
+                meshCircles[idx].setLatLng(mPos);
+
+                const backhaulDist = cPos.distanceTo(mPos);
+                let lineColor = '#10b981';
+                if (!active) lineColor = '#dc2626';
+                else if (backhaulDist > 260) lineColor = '#ef4444';
+                else if (backhaulDist > 170) lineColor = '#f59e0b';
+
+                meshLines[idx].setLatLngs([cPos, mPos]);
+                meshLines[idx].setStyle({ color: lineColor });
+
+                if (active) {
+                    const dCli = mPos.distanceTo(cliPos);
+                    if (dCli < bestDist) {
+                        bestDist = dCli;
+                        bestPos = mPos;
+                        bestLabel = `Nodo Mesh ${idx + 1}`;
+                    }
+                }
+            });
+
+            // También evaluar distancia directa a la antena central si no hay nodos activos cercanos
+            const directDist = cPos.distanceTo(cliPos);
+            if (directDist < bestDist) {
+                bestDist = directDist;
+                bestPos = cPos;
+                bestLabel = 'Gateway Central';
+            }
+
+            clientLinkLine.setLatLngs([bestPos, cliPos]);
+            const clampedDist = Math.max(5, Math.min(180, Math.round(bestDist)));
+            state.distM = clampedDist;
+
+            document.getElementById('gis-nearest').textContent = bestLabel;
+            document.getElementById('gis-dist').textContent = `${Math.round(bestDist)} m`;
+            document.getElementById('cli-dist').value = clampedDist;
+
+            updateClientPhysics();
+        }
+
+        function moveClientMarkerToDistance(distMeters) {
+            if (!meshMarkers.length || !clientMarker) return;
+            const refPos = meshMarkers[0].getLatLng();
+            const deltaLat = distMeters / 111320;
+            clientMarker.setLatLng([refPos.lat + deltaLat, refPos.lng]);
+            if (clientLinkLine) clientLinkLine.setLatLngs([refPos, clientMarker.getLatLng()]);
+            document.getElementById('gis-nearest').textContent = state.meshNodes > 0 ? 'Nodo Mesh 1' : 'Gateway Central';
+            document.getElementById('gis-dist').textContent = `${distMeters} m`;
         }
 
         // =====================================================================
@@ -546,6 +1148,7 @@
         function runSimulation(showMsg = false) {
             const trafficCurve = [0.15,0.1,0.08,0.08,0.12,0.25,0.45,0.7,0.92,1.0,1.0,0.95,0.85,0.9,1.0,0.95,0.88,0.82,0.95,1.0,0.88,0.65,0.4,0.22];
             const solarCurve   = [0,0,0,0,0,0,0.02,0.06,0.1,0.14,0.16,0.17,0.15,0.1,0.06,0.03,0.01,0,0,0,0,0,0,0];
+            const useRealHourly = state.dataOrigin === 'REAL_OPEN_METEO' && Array.isArray(state.hourlyRealWeather) && state.hourlyRealWeather.length === 24;
 
             let batWh = MODEL.batCapWh * 0.85;
             let totGen = 0, totCons = 0, sumThr = 0, sumRtt = 0, sumLoss = 0, okHours = 0;
@@ -555,23 +1158,30 @@
                 const n1 = (seededNoise(h + state.users) - 0.5) * 0.1;
                 const n2 = (seededNoise(h * 3 + state.rainPct) - 0.5);
 
-                const activeUsers = Math.max(1, Math.min(40, Math.round(state.users * trafficCurve[h] * (1 + n1))));
-                const att = state.rainPct / 100;
-                const leoMbps = Math.max(25, MODEL.leoMaxMbps * (1 - Math.pow(att, 1.35) * 0.85) + n2 * 5);
+                // En la hora actualmente inspeccionada (state.hour) se respeta el número exacto de usuarios fijado en el deslizador
+                const activeUsers = (h === state.hour)
+                    ? state.users
+                    : Math.max(1, Math.min(40, Math.round(state.users * trafficCurve[h] * (1 + n1))));
+                const hourRainPct = useRealHourly ? state.hourlyRealWeather[h].rainFade : state.rainPct;
+                const att = hourRainPct / 100;
+                const leoMbps = Math.max(25, MODEL.leoMaxMbps * (1 - Math.pow(att, 1.35) * 0.85) + (useRealHourly ? 0 : n2 * 5));
                 const meshCap = state.meshNodes * 52.0; // ~52 Mbps efectivos por nodo Mesh 802.11ax
                 const netMbps = Math.min(leoMbps, meshCap);
 
                 // QoS Gateway: MIR 5.0 Mbps, mínimo garantizado CIR 1.25 Mbps
-                let thrUser = Math.min(MODEL.mirMbps * (0.98 + n2 * 0.03), (netMbps / activeUsers) * 0.96);
+                let thrUser = Math.min(MODEL.mirMbps * (useRealHourly ? 0.99 : (0.98 + n2 * 0.03)), (netMbps / activeUsers) * 0.96);
                 thrUser = Math.max(0.45, thrUser);
 
                 const loadRatio = activeUsers / 40;
-                const rtt = Math.max(20, 24.5 + Math.pow(loadRatio, 1.7) * 8.5 + Math.pow(att, 1.5) * 34 + (4 - state.meshNodes) * 4.2 + n2 * 2);
-                const loss = Math.max(0.05, 0.12 + Math.pow(att, 1.9) * 3.8 + (4 - state.meshNodes) * 0.28 + (loadRatio > 0.9 ? 0.35 : 0) + n2 * 0.06);
+                const rtt = Math.max(20, 24.5 + Math.pow(loadRatio, 1.7) * 8.5 + Math.pow(att, 1.5) * 34 + (4 - state.meshNodes) * 4.2 + (useRealHourly ? 0 : n2 * 2));
+                const loss = Math.max(0.05, 0.12 + Math.pow(att, 1.9) * 3.8 + (4 - state.meshNodes) * 0.28 + (loadRatio > 0.9 ? 0.35 : 0) + (useRealHourly ? 0 : n2 * 0.06));
 
                 // Energía: Terminal 100W + Router 15W + (Nodos * 12W) + tráfico
-                const consWh = 100 + 15 + (state.meshNodes * 12) + (loadRatio * 7.5) + n2 * 1.5;
-                const genWh = Math.max(0, MODEL.pvWp * state.hsp * solarCurve[h] * MODEL.efficiency * (1 + n2 * 0.12));
+                const consWh = 100 + 15 + (state.meshNodes * 12) + (loadRatio * 7.5) + (useRealHourly ? 0 : n2 * 1.5);
+                // En modo clima real usa la irradiancia satelital exacta de esa hora (W/m2); en manual usa la curva teórica
+                const genWh = useRealHourly
+                    ? Math.max(0, MODEL.pvWp * (state.hourlyRealWeather[h].radWm2 / 1000) * MODEL.efficiency)
+                    : Math.max(0, MODEL.pvWp * state.hsp * solarCurve[h] * MODEL.efficiency * (1 + n2 * 0.12));
 
                 batWh = Math.min(MODEL.batCapWh, Math.max(0, batWh + genWh - consWh));
                 const soc = (batWh / MODEL.batCapWh) * 100;
@@ -587,6 +1197,9 @@
                 rows.push({
                     h,
                     label: `${String(h).padStart(2, '0')}:00`,
+                    origin: state.dataOrigin,
+                    hspVal: useRealHourly ? Number((state.hourlyRealWeather[h].radWm2 / 1000).toFixed(2)) : state.hsp,
+                    rainVal: hourRainPct,
                     users: activeUsers,
                     leo: Number(leoMbps.toFixed(1)),
                     thr: Number(thrUser.toFixed(2)),
@@ -728,8 +1341,8 @@
             cScatter1.data.datasets[0].data = r.map(x => ({ x: x.users, y: x.thr }));
             cScatter1.update();
 
-            cScatter2.data.datasets[0].data = r.map(x => ({ x: Math.min(100, Math.round(state.rainPct + (x.users / 40) * 40)), y: x.rtt }));
-            cScatter2.data.datasets[1].data = r.map(x => ({ x: Math.min(100, Math.round(state.rainPct + (x.users / 40) * 40)), y: x.loss }));
+            cScatter2.data.datasets[0].data = r.map(x => ({ x: Math.min(100, Math.round(x.rainVal + (x.users / 40) * 40)), y: x.rtt }));
+            cScatter2.data.datasets[1].data = r.map(x => ({ x: Math.min(100, Math.round(x.rainVal + (x.users / 40) * 40)), y: x.loss }));
             cScatter2.update();
 
             cEnergy.data.labels = r.map(x => x.label);
@@ -750,7 +1363,13 @@
             document.getElementById('tbl-body').innerHTML = state.rows.map(r => `
                 <tr class="hover:bg-blue-50 cursor-pointer" onclick="pickHour(${r.h})">
                     <td class="py-2 px-3 font-bold">${r.label}</td>
+                    <td class="py-2 px-3">
+                        <span class="px-1.5 py-0.5 rounded text-[10px] font-sans font-bold ${r.origin === 'REAL_OPEN_METEO' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${r.origin === 'REAL_OPEN_METEO' ? 'REAL' : 'SIM'}
+                        </span>
+                    </td>
                     <td class="py-2 px-3 text-right">${r.users}</td>
+                    <td class="py-2 px-3 text-right text-slate-600">${r.hspVal.toFixed(1)}h / ${r.rainVal}%</td>
                     <td class="py-2 px-3 text-right">${r.leo}</td>
                     <td class="py-2 px-3 text-right font-semibold text-blue-700">${r.thr.toFixed(2)} Mbps</td>
                     <td class="py-2 px-3 text-right ${r.rtt >= 40 ? 'text-rose-600 font-bold' : ''}">${r.rtt} ms</td>
@@ -849,76 +1468,81 @@
             document.getElementById('cli-speed').textContent = `${state.effMbps.toFixed(2)} Mbps`;
             document.getElementById('cli-rtt').textContent = `${state.cliRtt}ms / ${state.cliLoss}%`;
 
-            // Actualizar Telemetría Videollamada
-            const jit = Number((2.5 + state.cliRtt * 0.12 + state.cliLoss * 3.5).toFixed(1));
-            let resShort = 'HD 1080p • 30 FPS', resFull = '1920x1080 (Full HD)', mos = 4.4, badgeBg = 'bg-emerald-600';
+            // Actualización de telemetría de videollamada (ABR)
+            const badge = document.getElementById('vid-badge-res');
+            const codec = document.getElementById('vid-badge-codec');
+            const buf = document.getElementById('vid-buffer');
+            const jitter = Number((state.cliRtt * 0.14 + state.cliLoss * 3.1).toFixed(1));
+
+            let resLabel = 'HD 1080p • 30 FPS';
+            let resDetail = '1920x1080 (Full HD)';
+            let mos = 4.5;
             let diag = 'Con la velocidad efectiva actual, el enlace soporta clases virtuales sincrónicas y teleconsulta médica con video fluido sin cortes de audio.';
 
-            if (state.effMbps < 0.9 || state.cliLoss > 3.5) {
-                resShort = 'AUDIO / 240p • 10 FPS'; resFull = '426x240 (Emergencia)'; mos = 2.1; badgeBg = 'bg-rose-600';
-                diag = 'Degradación severa por atenuación Wi-Fi/Satelital: se recomienda apagar cámara y mantener solo audio.';
-            } else if (state.effMbps < 1.8 || state.cliRtt > 45 || state.cliLoss > 1.2) {
-                resShort = 'SD 480p • 20 FPS'; resFull = '854x480 (Estándar)'; mos = 3.3; badgeBg = 'bg-amber-600';
-                diag = 'El algoritmo ABR redujo la resolución a 480p para compensar la latencia/congestión y evitar congelamiento.';
-            } else if (state.effMbps < 3.4) {
-                resShort = 'HD 720p • 25 FPS'; resFull = '1280x720 (HD)'; mos = 3.9; badgeBg = 'bg-blue-600';
-                diag = 'Operación estable dentro de la política QoS (entre CIR 1.25 Mbps y MIR 5.0 Mbps). Videollamada fluida.';
+            if (state.effMbps < 1.3 || state.cliLoss > 3.0 || state.cliRtt > 60) {
+                resLabel = 'AUDIO / 240p • 10 FPS';
+                resDetail = '426x240 (Degradado)';
+                mos = 2.1;
+                badge.className = 'px-2.5 py-1 rounded-md bg-rose-600 text-white font-mono text-xs font-bold shadow';
+                buf.classList.remove('hidden');
+                diag = 'Degradación severa por congestión, atenuación climática o distancia Mesh. Se prioriza voz (Opus) mediante QoS.';
+            } else if (state.effMbps < 3.0 || state.cliLoss > 1.2 || state.cliRtt > 42) {
+                resLabel = 'SD 480p • 24 FPS';
+                resDetail = '854x480 (Estándar)';
+                mos = 3.4;
+                badge.className = 'px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 font-mono text-xs font-bold shadow';
+                buf.classList.add('hidden');
+                diag = 'Bitrate adaptado a resolución estándar (480p). Apto para navegación educativa y teleconsulta básica.';
+            } else {
+                badge.className = 'px-2.5 py-1 rounded-md bg-emerald-600 text-white font-mono text-xs font-bold shadow';
+                buf.classList.add('hidden');
             }
 
-            const bRes = document.getElementById('vid-badge-res');
-            bRes.textContent = resShort;
-            bRes.className = `px-2.5 py-1 rounded-md ${badgeBg} text-white font-mono text-xs font-bold shadow`;
-            document.getElementById('vid-badge-codec').textContent = `WebRTC Opus/VP9 • Jitter: ${jit} ms`;
-            document.getElementById('qoe-res').textContent = resFull;
-            document.getElementById('qoe-bit').textContent = `${Math.min(state.effMbps * 0.88, 4.4).toFixed(2)} Mbps`;
-            document.getElementById('qoe-jit').textContent = `${jit} ms`;
+            badge.textContent = resLabel;
+            codec.textContent = `WebRTC Opus/VP9 • Jitter: ${jitter} ms`;
+            document.getElementById('qoe-res').textContent = resDetail;
+            document.getElementById('qoe-bit').textContent = `${Math.min(state.effMbps, 4.5).toFixed(2)} Mbps`;
+            document.getElementById('qoe-jit').textContent = `${jitter} ms`;
             document.getElementById('qoe-mos').textContent = `${mos.toFixed(1)} / 5.0`;
             document.getElementById('qoe-diag').textContent = diag;
-
-            const buf = document.getElementById('vid-buffer');
-            if (state.cliLoss > 2.5 || state.cliRtt > 55 || state.effMbps < 0.8) buf.classList.remove('hidden');
-            else buf.classList.add('hidden');
         }
 
-        // --- Descarga Web ---
         let dlTimer = null;
-        function startDownload(fileName, sizeMB) {
+        function startDownload(fileName, sizeMb) {
             if (dlTimer) clearInterval(dlTimer);
-            const totalBits = sizeMB * 8;
-            let doneBits = 0;
-            const t0 = performance.now();
+            const totalBits = sizeMb * 8;
             const idealSec = totalBits / MODEL.mirMbps;
+            let downloadedMb = 0;
+            const t0 = performance.now();
 
-            document.getElementById('dl-title').textContent = `Descargando: ${fileName} (${sizeMB.toFixed(1)} MB)`;
+            document.getElementById('dl-title').textContent = `Descargando: ${fileName}...`;
             document.getElementById('dl-time-ideal').textContent = `${idealSec.toFixed(1)} s`;
 
             dlTimer = setInterval(() => {
-                const eff = Math.max(0.25, state.effMbps * Math.max(0.4, 1 - (state.cliLoss / 100) * 3) * (0.92 + Math.random() * 0.16));
-                doneBits += eff * 0.1;
+                const eff = Math.max(0.25, state.effMbps * (0.9 + Math.random() * 0.18));
+                const stepMb = (eff / 8) * 0.1;
+                downloadedMb = Math.min(sizeMb, downloadedMb + stepMb);
+
                 const elapsed = (performance.now() - t0) / 1000;
-                const pct = Math.min(100, (doneBits / totalBits) * 100);
-                const doneMB = Math.min(sizeMB, doneBits / 8);
+                const pct = (downloadedMb / sizeMb) * 100;
+                const diffPct = ((elapsed - idealSec) / idealSec) * 100;
 
                 document.getElementById('dl-bar').style.width = `${pct.toFixed(1)}%`;
                 document.getElementById('dl-rate').textContent = `${eff.toFixed(2)} Mbps`;
-                document.getElementById('dl-mb').textContent = `(${doneMB.toFixed(1)} / ${sizeMB.toFixed(1)} MB)`;
+                document.getElementById('dl-mb').textContent = `(${downloadedMb.toFixed(1)} / ${sizeMb.toFixed(1)} MB)`;
                 document.getElementById('dl-time-real').textContent = `${elapsed.toFixed(1)} s`;
-                const diff = ((elapsed - idealSec * (pct / 100)) / Math.max(0.1, idealSec * (pct / 100))) * 100;
-                document.getElementById('dl-diff').textContent = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%`;
+                document.getElementById('dl-diff').textContent = `${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%`;
 
-                if (doneBits >= totalBits) {
+                if (downloadedMb >= sizeMb) {
                     clearInterval(dlTimer);
                     dlTimer = null;
                     document.getElementById('dl-title').textContent = `Completado: ${fileName}`;
-                    notify(`Descarga completada en ${elapsed.toFixed(1)} s`, 'success');
+                    notify(`Descarga de ${fileName} finalizada en ${elapsed.toFixed(1)} s.`, 'success');
                 }
             }, 100);
         }
 
-        // --- Consola Ping & Traceroute ---
-        let pingTimer = null;
-        let pStat = { sent: 0, recv: 0, rtts: [] };
-
+        let pingTimer = null, pingSeq = 0, pingSent = 0, pingRecv = 0, pingRtts = [];
         function togglePing() {
             const btn = document.getElementById('btn-ping');
             if (pingTimer) {
@@ -926,78 +1550,275 @@
                 pingTimer = null;
                 btn.textContent = 'Iniciar Ping';
                 btn.className = 'px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold rounded-lg cursor-pointer';
-            } else {
-                btn.textContent = 'Detener Ping';
-                btn.className = 'px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-mono text-xs font-bold rounded-lg cursor-pointer';
-                sendPing();
-                pingTimer = setInterval(sendPing, 900);
+                return;
             }
-        }
+            btn.textContent = 'Detener Ping';
+            btn.className = 'px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white font-mono text-xs font-bold rounded-lg cursor-pointer';
 
-        function sendPing() {
-            const out = document.getElementById('ping-out');
-            pStat.sent++;
-            const lost = (Math.random() * 100) < state.cliLoss;
-            const div = document.createElement('div');
-            if (lost) {
-                div.className = 'text-rose-400 font-bold';
-                div.textContent = `Request timeout for icmp_seq ${pStat.sent} (Pérdida en enlace inalámbrico/satelital)`;
-            } else {
-                pStat.recv++;
-                const ms = Math.max(18, state.cliRtt + (Math.random() - 0.5) * 6);
-                pStat.rtts.push(ms);
-                div.className = ms >= 40 ? 'text-amber-300' : 'text-emerald-400';
-                div.textContent = `64 bytes from 8.8.8.8: icmp_seq=${pStat.sent} ttl=115 time=${ms.toFixed(1)} ms ${ms >= 40 ? '[>40ms KPI]' : ''}`;
-            }
-            out.appendChild(div);
-            out.scrollTop = out.scrollHeight;
+            pingTimer = setInterval(() => {
+                pingSeq++;
+                pingSent++;
+                const out = document.getElementById('ping-out');
+                const line = document.createElement('div');
+                const lost = (Math.random() * 100) < state.cliLoss;
 
-            const lostCnt = pStat.sent - pStat.recv;
-            const pct = ((lostCnt / pStat.sent) * 100).toFixed(1);
-            document.getElementById('ping-summary').textContent = `Enviados: ${pStat.sent} | Recibidos: ${pStat.recv} | Perdidos: ${lostCnt} (${pct}%)`;
-            if (pStat.rtts.length) {
-                const min = Math.min(...pStat.rtts).toFixed(1);
-                const max = Math.max(...pStat.rtts).toFixed(1);
-                const avg = (pStat.rtts.reduce((a, b) => a + b, 0) / pStat.rtts.length).toFixed(1);
-                document.getElementById('ping-rtt-stats').textContent = `RTT Mín/Prom/Máx: ${min} / ${avg} / ${max} ms`;
-            }
+                if (lost) {
+                    line.className = 'text-rose-400';
+                    line.textContent = `From 8.8.8.8 icmp_seq=${pingSeq} Request timed out (Packet Loss)`;
+                } else {
+                    pingRecv++;
+                    const rttVal = Number((state.cliRtt + (Math.random() - 0.5) * 5.2).toFixed(1));
+                    pingRtts.push(rttVal);
+                    line.className = rttVal >= 40 ? 'text-amber-300' : 'text-emerald-400';
+                    line.textContent = `64 bytes from 8.8.8.8: icmp_seq=${pingSeq} ttl=56 time=${rttVal} ms`;
+                }
+                out.appendChild(line);
+                out.scrollTop = out.scrollHeight;
+
+                const lostCount = pingSent - pingRecv;
+                const lossPct = ((lostCount / pingSent) * 100).toFixed(1);
+                document.getElementById('ping-summary').textContent = `Enviados: ${pingSent} | Recibidos: ${pingRecv} | Perdidos: ${lostCount} (${lossPct}%)`;
+                if (pingRtts.length) {
+                    const min = Math.min(...pingRtts).toFixed(1);
+                    const max = Math.max(...pingRtts).toFixed(1);
+                    const avg = (pingRtts.reduce((a, b) => a + b, 0) / pingRtts.length).toFixed(1);
+                    document.getElementById('ping-rtt-stats').textContent = `RTT Mín/Prom/Máx: ${min} / ${avg} / ${max} ms`;
+                }
+            }, 850);
         }
 
         function runTraceroute() {
             const out = document.getElementById('ping-out');
             const hops = [
-                `traceroute to 8.8.8.8, 30 hops max`,
+                `traceroute to 8.8.8.8 (8.8.8.8), 30 hops max`,
                 ` 1  nodo-mesh-80211ax.local (192.168.10.2)  ${(2.1 + state.distM * 0.04).toFixed(1)} ms`,
-                ` 2  gateway-qos-rural.local (192.168.10.1)  ${(3.8 + state.distM * 0.05).toFixed(1)} ms`,
-                ` 3  terminal-leo-kuka.starlink (100.64.0.1)  ${(state.cliRtt * 0.85).toFixed(1)} ms`,
-                ` 4  dns.google (8.8.8.8)  ${state.cliRtt.toFixed(1)} ms`
+                ` 2  gateway-qos-vlan.local (192.168.10.1)  ${(3.8 + state.distM * 0.05).toFixed(1)} ms`,
+                ` 3  terminal-leo-kuka.sat (100.64.0.1)  ${state.cliRtt.toFixed(1)} ms`,
+                ` 4  dns.google (8.8.8.8)  ${(state.cliRtt + 4.2).toFixed(1)} ms`
             ];
-            hops.forEach(line => {
+            hops.forEach(h => {
                 const d = document.createElement('div');
                 d.className = 'text-sky-300';
-                d.textContent = line;
+                d.textContent = h;
                 out.appendChild(d);
             });
             out.scrollTop = out.scrollHeight;
         }
 
         function clearPing() {
-            pStat = { sent: 0, recv: 0, rtts: [] };
-            document.getElementById('ping-out').innerHTML = '<div class="text-slate-500"># Consola limpia.</div>';
+            pingSeq = 0; pingSent = 0; pingRecv = 0; pingRtts = [];
+            document.getElementById('ping-out').innerHTML = '<div class="text-slate-500"># Consola limpia. Presione "Iniciar Ping" o "Traceroute"...</div>';
             document.getElementById('ping-summary').textContent = 'Enviados: 0 | Recibidos: 0 | Perdidos: 0 (0.0%)';
             document.getElementById('ping-rtt-stats').textContent = 'RTT Mín/Prom/Máx: -- / -- / -- ms';
+        }
+
+        // =====================================================================
+        // MODO AUTO-MUESTREO ESTOCÁSTICO 24 HORAS (POR ZONA CONFIGURADA)
+        // =====================================================================
+        let auto24Timer = null;
+        let auto24CountdownTimer = null;
+        let auto24Step = 0;
+
+        async function toggleAuto24Sweep() {
+            const btn = document.getElementById('btn-auto24');
+            const lbl = document.getElementById('auto24-label');
+            const ico = document.getElementById('auto24-icon');
+            const intervalSel = document.getElementById('sel-sample-interval');
+
+            if (auto24Timer) {
+                clearInterval(auto24Timer);
+                clearInterval(auto24CountdownTimer);
+                auto24Timer = null;
+                auto24CountdownTimer = null;
+                intervalSel.disabled = false;
+                btn.className = 'px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer';
+                ico.className = 'fa-solid fa-play';
+                lbl.textContent = 'Auto-Muestreo 24h';
+                notify('Muestreo detenido. Puede exportar los datos capturados hasta este momento.', 'warn');
+                return;
+            }
+
+            const stepSeconds = parseInt(intervalSel.value, 10) || 1;
+            const loc = getActiveLocation();
+            lbl.textContent = 'Cargando clima real...';
+            await syncRealWeather();
+
+            auto24Step = 0;
+            intervalSel.disabled = true;
+            const recordedRows = [];
+            let batWh = MODEL.batCapWh * 0.85;
+            let totGen = 0, totCons = 0, sumThr = 0, sumRtt = 0, sumLoss = 0, okHours = 0;
+            const solarCurveFallback = [0,0,0,0,0,0,0.02,0.06,0.1,0.14,0.16,0.17,0.15,0.1,0.06,0.03,0.01,0,0,0,0,0,0,0];
+
+            btn.className = 'px-3.5 py-2 bg-amber-300 text-slate-950 text-xs sm:text-sm font-extrabold transition flex items-center gap-2 cursor-pointer';
+            ico.className = 'fa-solid fa-stop';
+            notify(`Iniciando captura de 24 muestras (1 muestra cada ${stepSeconds >= 60 ? (stepSeconds/60) + ' min' : stepSeconds + ' seg'}) en ${loc.name}...`, 'success');
+
+            let nextSampleAt = Date.now() + stepSeconds * 1000;
+
+            const formatRemain = (ms) => {
+                const s = Math.max(0, Math.ceil(ms / 1000));
+                const hh = Math.floor(s / 3600);
+                const mm = Math.floor((s % 3600) / 60);
+                const ss = s % 60;
+                return hh > 0
+                    ? `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`
+                    : `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+            };
+
+            const runStep = async () => {
+                if (auto24Step >= 24) {
+                    clearInterval(auto24Timer);
+                    clearInterval(auto24CountdownTimer);
+                    auto24Timer = null;
+                    auto24CountdownTimer = null;
+                    intervalSel.disabled = false;
+                    btn.className = 'px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-bold transition flex items-center gap-2 cursor-pointer';
+                    ico.className = 'fa-solid fa-play';
+                    lbl.textContent = 'Auto-Muestreo 24h';
+                    notify(`Captura completada en ${loc.name}. Ya puede descargar el CSV con las 24 muestras.`, 'success');
+                    return;
+                }
+
+                // Si el intervalo es >= 5 minutos (300s), refrescar el clima real satelital en vivo en cada hora
+                if (stepSeconds >= 300 && auto24Step > 0) {
+                    await syncRealWeather();
+                }
+
+                const h = auto24Step;
+                const nowDate = new Date();
+                const realHour = nowDate.getHours();
+                const timeStamp = nowDate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                // 1. ÚNICA VARIABLE ALEATORIA: número de usuarios concurrentes según franja horaria
+                const refHour = stepSeconds >= 300 ? realHour : h;
+                const isNight = refHour < 6 || refHour >= 22;
+                const isSchoolPeak = (refHour >= 8 && refHour <= 12) || (refHour >= 14 && refHour <= 17);
+                const minUsr = isNight ? 1 : (isSchoolPeak ? 18 : 6);
+                const maxUsr = isNight ? 8 : (isSchoolPeak ? 40 : 26);
+                const activeUsers = Math.floor(minUsr + Math.random() * (maxUsr - minUsr + 1));
+
+                // 2. CLIMA Y RADIACIÓN SOLAR REALES DE LA ZONA EN ESA HORA ESPECÍFICA
+                const hasHourly = Array.isArray(state.hourlyRealWeather) && state.hourlyRealWeather[refHour];
+                const realRainPct = hasHourly ? state.hourlyRealWeather[refHour].rainFade : state.rainPct;
+                const realHspHour = hasHourly ? Number((state.hourlyRealWeather[refHour].radWm2 / 1000).toFixed(2)) : state.hsp;
+
+                state.hour = refHour;
+                state.users = activeUsers;
+                document.getElementById('inp-hour').value = refHour;
+                document.getElementById('inp-users').value = activeUsers;
+                if (hasHourly) {
+                    const hw = state.hourlyRealWeather[refHour];
+                    document.getElementById('met-rad').textContent = `${Math.round(hw.radWm2)} W/m²`;
+                    document.getElementById('met-rain').textContent = `${hw.precipMm.toFixed(1)} mm • ${hw.clouds}%`;
+                }
+                syncLabels();
+
+                // 3. CÁLCULO FÍSICO CON EL CLIMA REAL DE LA ZONA EN ESA HORA
+                const att = realRainPct / 100;
+                const leoMbps = Math.max(25, MODEL.leoMaxMbps * (1 - Math.pow(att, 1.35) * 0.85));
+                const meshCap = state.meshNodes * 52.0;
+                const netMbps = Math.min(leoMbps, meshCap);
+
+                let thrUser = Math.min(MODEL.mirMbps, (netMbps / activeUsers) * 0.96);
+                thrUser = Math.max(0.45, thrUser);
+
+                const loadRatio = activeUsers / 40;
+                const rtt = Math.max(20, 24.5 + Math.pow(loadRatio, 1.7) * 8.5 + Math.pow(att, 1.5) * 34 + (4 - state.meshNodes) * 4.2);
+                const loss = Math.max(0.05, 0.12 + Math.pow(att, 1.9) * 3.8 + (4 - state.meshNodes) * 0.28 + (loadRatio > 0.9 ? 0.35 : 0));
+
+                const consWh = 100 + 15 + (state.meshNodes * 12) + (loadRatio * 7.5);
+                const genWh = hasHourly
+                    ? Math.max(0, MODEL.pvWp * (state.hourlyRealWeather[refHour].radWm2 / 1000) * MODEL.efficiency)
+                    : Math.max(0, MODEL.pvWp * state.hsp * solarCurveFallback[refHour] * MODEL.efficiency);
+
+                batWh = Math.min(MODEL.batCapWh, Math.max(0, batWh + genWh - consWh));
+                const soc = (batWh / MODEL.batCapWh) * 100;
+                const volt = 21.8 + (soc / 100) * 5.6;
+
+                const isOk = soc > 10 && rtt < 40 && loss < 1.0 && thrUser >= MODEL.cirMbps;
+                if (soc > 10 && loss < 4.0) okHours++;
+                const devMir = ((thrUser - MODEL.mirMbps) / MODEL.mirMbps) * 100;
+
+                totGen += genWh; totCons += consWh; sumThr += thrUser; sumRtt += rtt; sumLoss += loss;
+
+                recordedRows.push({
+                    h: refHour,
+                    label: stepSeconds >= 60 ? timeStamp : `${String(h).padStart(2, '0')}:00`,
+                    origin: state.dataOrigin,
+                    hspVal: realHspHour,
+                    rainVal: realRainPct,
+                    users: activeUsers,
+                    leo: Number(leoMbps.toFixed(1)),
+                    thr: Number(thrUser.toFixed(2)),
+                    rtt: Number(rtt.toFixed(1)),
+                    loss: Number(loss.toFixed(2)),
+                    gen: Number(genWh.toFixed(1)),
+                    cons: Number(consWh.toFixed(1)),
+                    soc: Number(soc.toFixed(1)),
+                    volt: Number(volt.toFixed(2)),
+                    devMir: Number(devMir.toFixed(1)),
+                    isOk
+                });
+
+                const count = recordedRows.length;
+                state.rows = [...recordedRows];
+                const avgThr = sumThr / count;
+                const avgRtt = sumRtt / count;
+                const avgLoss = sumLoss / count;
+                const uptime = (okHours / count) * 100;
+                const autonomy = batWh / (totCons / count);
+                const theoGen = MODEL.pvWp * MODEL.designHsp * MODEL.efficiency;
+
+                state.summary = {
+                    uptime,
+                    avgThr,
+                    avgRtt,
+                    avgLoss,
+                    totGen,
+                    totCons,
+                    autonomy,
+                    devThr: ((avgThr - MODEL.mirMbps) / MODEL.mirMbps) * 100,
+                    devRtt: ((avgRtt - MODEL.kpiRtt) / MODEL.kpiRtt) * 100,
+                    devLoss: ((avgLoss - MODEL.kpiLoss) / MODEL.kpiLoss) * 100,
+                    devCons: ((totCons - MODEL.dailyEdWh) / MODEL.dailyEdWh) * 100,
+                    devGen: ((totGen - theoGen) / theoGen) * 100,
+                    devAuto: ((autonomy - MODEL.kpiAutonomy) / MODEL.kpiAutonomy) * 100
+                };
+
+                renderKpis();
+                renderCharts();
+                renderTable();
+                updateBannerAndTopo();
+                updateClientPhysics();
+
+                auto24Step++;
+                nextSampleAt = Date.now() + stepSeconds * 1000;
+                lbl.textContent = auto24Step < 24
+                    ? `Muestra ${auto24Step}/24 • Próx: ${formatRemain(nextSampleAt - Date.now())}`
+                    : `Completado 24/24`;
+            };
+
+            await runStep();
+            auto24Timer = setInterval(runStep, stepSeconds * 1000);
+            auto24CountdownTimer = setInterval(() => {
+                if (auto24Step < 24) {
+                    lbl.textContent = `Muestra ${auto24Step}/24 • Próx: ${formatRemain(nextSampleAt - Date.now())}`;
+                }
+            }, 500);
         }
 
         // =====================================================================
         // EXPORTACIÓN CSV Y GRABACIÓN DE PANTALLA (.WEBM)
         // =====================================================================
         function downloadCSV() {
-            const head = ['Hora','Escenario','Usuarios','Nodos_Mesh','RainFade_Pct','HSP','LEO_Mbps','Throughput_Mbps','MIR_Teorico','CIR_Teorico','Desvio_MIR_Pct','RTT_ms','Perdida_Pct','Gen_FV_Wh','Consumo_Wh','Voltaje_24V','SoC_Pct'];
-            const body = state.rows.map(r => [r.label, state.scenario, r.users, `${state.meshNodes}/4`, state.rainPct, state.hsp, r.leo, r.thr, 5.0, 1.25, r.devMir, r.rtt, r.loss, r.gen, r.cons, r.volt, r.soc]);
+            const head = ['Hora','Origen_Clima','Ubicacion','Escenario','Usuarios','Nodos_Mesh','RainFade_Pct','HSP','LEO_Mbps','Throughput_Mbps','MIR_Teorico','CIR_Teorico','Desvio_MIR_Pct','RTT_ms','Perdida_Pct','Gen_FV_Wh','Consumo_Wh','Voltaje_24V','SoC_Pct'];
+            const locName = getActiveLocation().name.replace(/,/g, '');
+            const body = state.rows.map(r => [r.label, r.origin || state.dataOrigin, locName, state.scenario, r.users, `${state.meshNodes}/4`, r.rainVal ?? state.rainPct, r.hspVal ?? state.hsp, r.leo, r.thr, 5.0, 1.25, r.devMir, r.rtt, r.loss, r.gen, r.cons, r.volt, r.soc]);
             const csv = '\uFEFF' + [head.join(','), ...body.map(e => e.join(','))].join('\n');
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-            a.download = `bitacora_experimental_${state.scenario}.csv`;
+            a.download = `bitacora_experimental_${state.dataOrigin.toLowerCase()}.csv`;
             a.click();
             notify('Archivo CSV descargado.', 'success');
         }
@@ -1142,12 +1963,15 @@
 
         window.onload = function () {
             initCharts();
+            initRuralMap();
             runSimulation(false);
+            syncRealWeather();
             resizeCanvas('topoCanvas');
             resizeCanvas('videoCanvas');
             window.addEventListener('resize', () => {
                 resizeCanvas('topoCanvas');
                 resizeCanvas('videoCanvas');
+                if (map) map.invalidateSize();
             });
             animateLoop();
         };
