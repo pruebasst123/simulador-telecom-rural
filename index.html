@@ -405,7 +405,7 @@
                 <h2 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
                     <i class="fa-solid fa-square-root-variable text-blue-600"></i> 4. Modelo Conceptual vs. Resultados Experimentales (Desvíos Matemáticos)
                 </h2>
-                <p class="text-xs text-slate-500 mt-0.5">Contraste frente a las ecuaciones base de dimensionamiento (Tablas 9 y 10).</p>
+                <p class="text-xs text-slate-500 mt-0.5">Compara lo que prometía el diseño teórico en el papel (arriba) frente a lo que ocurre realmente en las 24 horas simuladas (abajo). Si la etiqueta está en <strong class="text-emerald-700">verde (CUMPLE)</strong>, la red soporta la zona sin fallas.</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -440,7 +440,7 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <span class="text-[10px] font-mono font-bold uppercase text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Gráfica 1 • Velocidad de Internet</span>
+                            <span class="text-[10px] font-mono font-bold uppercase text-blue-600 bg-blue-50 px-2 py-0.5 rounded">Dispersión 1 • Velocidad de Internet</span>
                             <span class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Ideal: Cerca de 5.0 Mbps</span>
                         </div>
                         <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1.5">¿Cómo cambia la velocidad según cuántas personas se conectan?</h3>
@@ -455,7 +455,7 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <span class="text-[10px] font-mono font-bold uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Gráfica 2 • Estabilidad y Retraso</span>
+                            <span class="text-[10px] font-mono font-bold uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">Dispersión 2 • Estabilidad y Retraso</span>
                             <span class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Ideal: Debajo de la línea roja</span>
                         </div>
                         <h3 class="text-sm sm:text-base font-bold text-slate-900 mt-1.5">¿Cómo afectan la lluvia y la congestión a las videollamadas?</h3>
@@ -1239,29 +1239,84 @@
         function renderKpis() {
             const s = state.summary;
             const list = [
-                { name: 'Disponibilidad (Uptime)', theo: '≥ 98.0%', exp: `${s.uptime.toFixed(1)}%`, dev: `${(s.uptime - 98).toFixed(1)}% pts`, ok: s.uptime >= 98 },
-                { name: 'Throughput / Usuario', theo: '5.00 Mbps (MIR)', exp: `${s.avgThr.toFixed(2)} Mbps`, dev: `${s.devThr >= 0 ? '+' : ''}${s.devThr.toFixed(1)}%`, ok: s.avgThr >= MODEL.cirMbps },
-                { name: 'Latencia Promedio (RTT)', theo: '< 40.0 ms', exp: `${s.avgRtt.toFixed(1)} ms`, dev: `${s.devRtt >= 0 ? '+' : ''}${s.devRtt.toFixed(1)}%`, ok: s.avgRtt < 40 },
-                { name: 'Pérdida de Paquetes', theo: '< 1.00%', exp: `${s.avgLoss.toFixed(2)}%`, dev: `${s.devLoss >= 0 ? '+' : ''}${s.devLoss.toFixed(1)}%`, ok: s.avgLoss < 1.0 },
-                { name: 'Consumo Diario (Ed)', theo: '3,912 Wh/día', exp: `${Math.round(s.totCons)} Wh`, dev: `${s.devCons >= 0 ? '+' : ''}${s.devCons.toFixed(1)}%`, ok: Math.abs(s.devCons) <= 15 },
-                { name: 'Autonomía Banco 24V', theo: '≥ 24.0 h sin sol', exp: `${s.autonomy.toFixed(1)} h`, dev: `${s.devAuto >= 0 ? '+' : ''}${s.devAuto.toFixed(1)}%`, ok: s.autonomy >= 24 }
+                {
+                    name: 'Disponibilidad (Uptime)',
+                    theo: '≥ 98.0%',
+                    exp: `${s.uptime.toFixed(1)}%`,
+                    dev: `${(s.uptime - 98).toFixed(1)}% pts`,
+                    ok: s.uptime >= 98,
+                    desc: s.uptime >= 98
+                        ? 'Porcentaje del día con señal activa y batería suficiente (supera la meta del 98%).'
+                        : 'Hubo horas con caída de batería o pérdida crítica de señal por debajo del 98% esperado.'
+                },
+                {
+                    name: 'Throughput / Usuario',
+                    theo: '5.00 Mbps (MIR)',
+                    exp: `${s.avgThr.toFixed(2)} Mbps`,
+                    dev: `${s.devThr >= 0 ? '+' : ''}${s.devThr.toFixed(1)}%`,
+                    ok: s.avgThr >= MODEL.cirMbps,
+                    desc: s.avgThr >= MODEL.cirMbps
+                        ? 'Velocidad promedio por persona (cumple el mínimo garantizado CIR de 1.25 Mbps).'
+                        : 'Velocidad promedio por debajo del mínimo garantizado (1.25 Mbps) por saturación.'
+                },
+                {
+                    name: 'Latencia Promedio (RTT)',
+                    theo: '< 40.0 ms',
+                    exp: `${s.avgRtt.toFixed(1)} ms`,
+                    dev: `${s.devRtt >= 0 ? '+' : ''}${s.devRtt.toFixed(1)}%`,
+                    ok: s.avgRtt < 40,
+                    desc: s.avgRtt < 40
+                        ? 'Tiempo de respuesta ida y vuelta al satélite (menor a 40 ms: llamadas sin retraso).'
+                        : 'El retraso supera los 40 ms debido a lluvia fuerte, distancia o congestión.'
+                },
+                {
+                    name: 'Pérdida de Paquetes',
+                    theo: '< 1.00%',
+                    exp: `${s.avgLoss.toFixed(2)}%`,
+                    dev: `${s.devLoss >= 0 ? '+' : ''}${s.devLoss.toFixed(1)}%`,
+                    ok: s.avgLoss < 1.0,
+                    desc: s.avgLoss < 1.0
+                        ? 'Datos que se pierden en el aire (menos del 1%: navegación limpia y estable).'
+                        : 'Se pierde más del 1% de los datos por atenuación climática o distancia entre nodos.'
+                },
+                {
+                    name: 'Consumo Diario (Ed)',
+                    theo: '3,912 Wh/día',
+                    exp: `${Math.round(s.totCons)} Wh`,
+                    dev: `${s.devCons >= 0 ? '+' : ''}${s.devCons.toFixed(1)}%`,
+                    ok: Math.abs(s.devCons) <= 15,
+                    desc: 'Energía total que gastan la antena satelital, el router y los nodos Mesh en 24 horas.'
+                },
+                {
+                    name: 'Autonomía Banco 24V',
+                    theo: '≥ 24.0 h sin sol',
+                    exp: `${s.autonomy.toFixed(1)} h`,
+                    dev: `${s.devAuto >= 0 ? '+' : ''}${s.devAuto.toFixed(1)}%`,
+                    ok: s.autonomy >= 24,
+                    desc: s.autonomy >= 24
+                        ? 'Horas que la batería mantiene la estación encendida sin sol (cubre toda la noche).'
+                        : 'La baja radiación solar redujo la reserva de batería por debajo de las 24 horas diseñadas.'
+                }
             ];
 
             document.getElementById('kpi-grid').innerHTML = list.map(k => `
-                <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/70">
-                    <div class="flex items-center justify-between gap-2 mb-2">
-                        <span class="text-xs font-bold text-slate-700">${k.name}</span>
-                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${k.ok ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${k.ok ? 'CUMPLE' : 'DESVÍO'}</span>
-                    </div>
-                    <div class="flex items-baseline justify-between mt-2">
-                        <div>
-                            <div class="text-[10px] text-slate-400 uppercase">Experimental</div>
-                            <div class="text-lg font-extrabold font-mono text-slate-900">${k.exp}</div>
+                <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/70 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="text-xs font-bold text-slate-700">${k.name}</span>
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${k.ok ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${k.ok ? 'CUMPLE' : 'DESVÍO'}</span>
                         </div>
-                        <div class="text-right">
-                            <div class="text-[10px] text-slate-400 uppercase">Desvío Mat.</div>
-                            <div class="text-xs font-mono font-bold px-2 py-0.5 rounded ${k.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${k.dev}</div>
+                        <div class="flex items-baseline justify-between mt-2">
+                            <div>
+                                <div class="text-[10px] text-slate-400 uppercase">Experimental</div>
+                                <div class="text-lg font-extrabold font-mono text-slate-900">${k.exp}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[10px] text-slate-400 uppercase">Desvío Mat.</div>
+                                <div class="text-xs font-mono font-bold px-2 py-0.5 rounded ${k.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${k.dev}</div>
+                            </div>
                         </div>
+                        <p class="mt-2.5 text-[11px] text-slate-600 leading-snug">${k.desc}</p>
                     </div>
                     <div class="mt-2.5 pt-2 border-t border-slate-200 flex justify-between text-[11px] text-slate-500">
                         <span>Diseño Conceptual:</span><span class="font-mono font-semibold">${k.theo}</span>
