@@ -180,7 +180,7 @@
                 </div>
 
                 <!-- Tarjeta Meteorológica Satelital -->
-                <div id="weather-telemetry-bar" class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-xl font-mono text-xs border border-slate-800 transition-colors">
+                <div id="weather-telemetry-bar" class="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-xl font-mono text-xs border border-slate-800 transition-colors">
                     <div>
                         <div id="met-hsp-lbl" class="text-[10px] text-slate-400">HSP Real / Día</div>
                         <div id="met-hsp" class="font-bold text-amber-400">4.50 HSP</div>
@@ -192,6 +192,10 @@
                     <div class="border-l border-slate-700 pl-2.5">
                         <div id="met-rain-lbl" class="text-[10px] text-slate-400">Lluvia / Nubes</div>
                         <div id="met-rain" class="font-bold text-sky-300">0.0 mm • 20%</div>
+                    </div>
+                    <div class="border-l border-slate-700 pl-2.5">
+                        <div class="text-[10px] text-slate-400">Geo / Bioma LEO</div>
+                        <div id="met-geo" class="font-bold text-purple-300">7.7°N • Selva (+6dB)</div>
                     </div>
                     <div class="border-l border-slate-700 pl-2.5">
                         <div id="met-src-lbl" class="text-[10px] text-slate-400">Fuente / Temp</div>
@@ -573,6 +577,8 @@
             hour: 12,
             dataOrigin: 'REAL_OPEN_METEO',
             hourlyRealWeather: null,
+            elevationM: 40,
+            detectedBiome: 'jungle',
             rows: [],
             summary: {},
             device: 'laptop',
@@ -595,6 +601,44 @@
 
         function getActiveLocation() {
             return state.muni === 'custom' ? state.customLoc : (MUNICIPALITIES[state.muni] || MUNICIPALITIES.chigorodo);
+        }
+
+        function inferBiomeFromGeo(lat, lon, elevM) {
+            if (elevM >= 1100) return 'mountain';
+            if (lat >= 10.5 && lon >= -73.8) return 'arid';
+            if (lat >= 3.5 && lat <= 7.2 && lon >= -71.8) return 'savanna';
+            return 'jungle';
+        }
+
+        function getGeoConnectivityImpact() {
+            const loc = getActiveLocation();
+            const biome = state.detectedBiome;
+            const biomeMeta = {
+                jungle:   { label: 'Selva/Dosel', meshDbLoss: 6.0, geoLossPct: 0.14 },
+                mountain: { label: 'Montaña',     meshDbLoss: 4.0, geoLossPct: 0.10 },
+                savanna:  { label: 'Sabana',      meshDbLoss: 1.0, geoLossPct: 0.03 },
+                arid:     { label: 'Árido/Costa', meshDbLoss: 0.0, geoLossPct: 0.00 }
+            }[biome] || { label: 'Selva/Dosel', meshDbLoss: 6.0, geoLossPct: 0.14 };
+
+            // Penalización física de latencia LEO según latitud (mayor distancia oblicua/handover cerca al ecuador 0°)
+            const absLat = Math.abs(loc.lat);
+            const leoLatRttMs = Number(Math.max(0, (12 - Math.min(12, absLat)) * 0.55).toFixed(1));
+            return {
+                biome,
+                label: biomeMeta.label,
+                meshDbLoss: biomeMeta.meshDbLoss,
+                geoLossPct: biomeMeta.geoLossPct,
+                leoLatRttMs,
+                latStr: `${absLat.toFixed(1)}°${loc.lat >= 0 ? 'N' : 'S'}`
+            };
+        }
+
+        function updateGeoBadge() {
+            const g = getGeoConnectivityImpact();
+            const el = document.getElementById('met-geo');
+            if (el) {
+                el.textContent = `${g.latStr} • ${g.label} (+${g.meshDbLoss}dB)`;
+            }
         }
 
         let cScatter1 = null, cScatter2 = null, cEnergy = null;
@@ -644,7 +688,7 @@
                 const estMm = Math.max(0, (state.rainPct - 5) / 9.5);
                 const estClouds = Math.min(100, Math.round(state.rainPct * 1.55));
 
-                bar.className = 'grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-xl font-mono text-xs border-2 border-amber-500/80 transition-colors';
+                bar.className = 'grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-xl font-mono text-xs border-2 border-amber-500/80 transition-colors';
                 document.getElementById('met-hsp-lbl').textContent = 'HSP Simulado';
                 document.getElementById('met-hsp').textContent = `${state.hsp.toFixed(2)} HSP`;
                 document.getElementById('met-rad-lbl').textContent = 'Irrad. Simulada';
@@ -656,6 +700,7 @@
                 srcEl.className = 'font-bold text-amber-400';
                 srcEl.textContent = 'SIMULADO MANUAL';
             }
+            updateGeoBadge();
         }
 
         function onSliderChange(source = 'weather') {
@@ -870,6 +915,8 @@
                 const precipMm = data.current ? Number(data.current.precipitation || 0) : 0;
                 const clouds = data.current ? Math.round(data.current.cloud_cover || 0) : 25;
                 const temp = data.current ? Math.round(data.current.temperature_2m || m.baseTemp) : m.baseTemp;
+                state.elevationM = typeof data.elevation === 'number' ? Math.round(data.elevation) : 50;
+                state.detectedBiome = inferBiomeFromGeo(m.lat, m.lon, state.elevationM);
 
                 // Guardar serie horaria real de 24 horas (irradiancia W/m2, precipitación mm/h y nubosidad %)
                 if (data.hourly && Array.isArray(data.hourly.shortwave_radiation)) {
@@ -899,17 +946,18 @@
                 syncLabels();
 
                 const bar = document.getElementById('weather-telemetry-bar');
-                if (bar) bar.className = 'grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-xl font-mono text-xs border border-emerald-500/60 transition-colors';
+                if (bar) bar.className = 'grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-xl font-mono text-xs border border-emerald-500/60 transition-colors';
                 document.getElementById('met-hsp-lbl').textContent = 'HSP Real / Día';
                 document.getElementById('met-hsp').textContent = `${realHsp.toFixed(2)} HSP`;
                 document.getElementById('met-rad-lbl').textContent = 'Irradiancia Real';
                 document.getElementById('met-rad').textContent = `${instRad} W/m²`;
                 document.getElementById('met-rain-lbl').textContent = 'Lluvia / Nubes';
                 document.getElementById('met-rain').textContent = `${precipMm.toFixed(1)} mm • ${clouds}%`;
+                updateGeoBadge();
                 document.getElementById('met-src-lbl').textContent = 'Fuente / Temp';
                 const srcEl = document.getElementById('met-src');
                 srcEl.className = 'font-bold text-emerald-400';
-                srcEl.textContent = `Live • ${temp}°C`;
+                srcEl.textContent = `Live • ${temp}°C (${state.elevationM}m)`;
 
                 runSimulation(false);
                 notify(`Clima real en vivo (${String(currentBogotaHour).padStart(2, '0')}:00) sincronizado para ${m.name}.`, 'success');
@@ -917,11 +965,13 @@
                 // Fallback resiliente si no hay acceso a red
                 state.dataOrigin = 'SIMULADO_MANUAL';
                 state.hourlyRealWeather = null;
+                state.detectedBiome = inferBiomeFromGeo(m.lat, m.lon, state.elevationM);
                 state.hsp = m.baseHsp;
                 state.rainPct = m.muni === 'tumaco' ? 24 : 10;
                 document.getElementById('inp-hsp').value = state.hsp;
                 document.getElementById('inp-rain').value = state.rainPct;
                 syncLabels();
+                updateGeoBadge();
 
                 document.getElementById('met-hsp').textContent = `${m.baseHsp.toFixed(2)} HSP`;
                 document.getElementById('met-rad').textContent = `~610 W/m²`;
@@ -1149,6 +1199,7 @@
             const trafficCurve = [0.15,0.1,0.08,0.08,0.12,0.25,0.45,0.7,0.92,1.0,1.0,0.95,0.85,0.9,1.0,0.95,0.88,0.82,0.95,1.0,0.88,0.65,0.4,0.22];
             const solarCurve   = [0,0,0,0,0,0,0.02,0.06,0.1,0.14,0.16,0.17,0.15,0.1,0.06,0.03,0.01,0,0,0,0,0,0,0];
             const useRealHourly = state.dataOrigin === 'REAL_OPEN_METEO' && Array.isArray(state.hourlyRealWeather) && state.hourlyRealWeather.length === 24;
+            const geoImpact = getGeoConnectivityImpact();
 
             let batWh = MODEL.batCapWh * 0.85;
             let totGen = 0, totCons = 0, sumThr = 0, sumRtt = 0, sumLoss = 0, okHours = 0;
@@ -1165,7 +1216,9 @@
                 const hourRainPct = useRealHourly ? state.hourlyRealWeather[h].rainFade : state.rainPct;
                 const att = hourRainPct / 100;
                 const leoMbps = Math.max(25, MODEL.leoMaxMbps * (1 - Math.pow(att, 1.35) * 0.85) + (useRealHourly ? 0 : n2 * 5));
-                const meshCap = state.meshNodes * 52.0; // ~52 Mbps efectivos por nodo Mesh 802.11ax
+                // Capacidad efectiva de los nodos Mesh afectada por la atenuación topográfica/dosel vegetal del bioma
+                const terrainFactor = Math.max(0.65, 1 - (geoImpact.meshDbLoss * 0.042));
+                const meshCap = state.meshNodes * 52.0 * terrainFactor;
                 const netMbps = Math.min(leoMbps, meshCap);
 
                 // QoS Gateway: MIR 5.0 Mbps, mínimo garantizado CIR 1.25 Mbps
@@ -1173,15 +1226,13 @@
                 thrUser = Math.max(0.45, thrUser);
 
                 const loadRatio = activeUsers / 40;
-                const rtt = Math.max(20, 24.5 + Math.pow(loadRatio, 1.7) * 8.5 + Math.pow(att, 1.5) * 34 + (4 - state.meshNodes) * 4.2 + (useRealHourly ? 0 : n2 * 2));
-                const loss = Math.max(0.05, 0.12 + Math.pow(att, 1.9) * 3.8 + (4 - state.meshNodes) * 0.28 + (loadRatio > 0.9 ? 0.35 : 0) + (useRealHourly ? 0 : n2 * 0.06));
-
-                // Energía: Terminal 100W + Router 15W + (Nodos * 12W) + tráfico
-                const consWh = 100 + 15 + (state.meshNodes * 12) + (loadRatio * 7.5) + (useRealHourly ? 0 : n2 * 1.5);
+                const rtt = Math.max(20, 24.5 + geoImpact.leoLatRttMs + Math.pow(loadRatio, 1.7) * 8.5 + Math.pow(att, 1.5) * 34 + (4 - state.meshNodes) * 4.2 + (useRealHourly ? 0 : n2 * 2));
+                const loss = Math.max(0.05, 0.12 + geoImpact.geoLossPct + Math.pow(att, 1.9) * 3.8 + (4 - state.meshNodes) * 0.28 + (loadRatio > 0.9 ? 0.35 : 0) + (useRealHourly ? 0 : n2 * 0.06));
                 // En modo clima real usa la irradiancia satelital exacta de esa hora (W/m2); en manual usa la curva teórica
                 const genWh = useRealHourly
                     ? Math.max(0, MODEL.pvWp * (state.hourlyRealWeather[h].radWm2 / 1000) * MODEL.efficiency)
                     : Math.max(0, MODEL.pvWp * state.hsp * solarCurve[h] * MODEL.efficiency * (1 + n2 * 0.12));
+                const consWh = (115 + state.meshNodes * 12) * (1 + (loadRatio - 0.5) * 0.05);
 
                 batWh = Math.min(MODEL.batCapWh, Math.max(0, batWh + genWh - consWh));
                 const soc = (batWh / MODEL.batCapWh) * 100;
@@ -1445,9 +1496,10 @@
             state.distM = parseInt(document.getElementById('cli-dist').value, 10);
             document.getElementById('lbl-dist').textContent = `${state.distM} m`;
 
+            const geoImpact = getGeoConnectivityImpact();
             const gain = { laptop: 0, tablet: -3.5, cpe: 5.5 }[state.device] || 0;
             const meshPenalty = (4 - state.meshNodes) * -3.5;
-            const pathLoss = 40 + 27 * Math.log10(Math.max(5, state.distM));
+            const pathLoss = 40 + 27 * Math.log10(Math.max(5, state.distM)) + geoImpact.meshDbLoss;
             state.rssi = Math.max(-92, Math.min(-35, Math.round(-12 - pathLoss + gain + meshPenalty)));
 
             let wifiCap = 120;
@@ -1715,22 +1767,23 @@
                 syncLabels();
 
                 // 3. CÁLCULO FÍSICO CON EL CLIMA REAL DE LA ZONA EN ESA HORA
+                const geoImpact = getGeoConnectivityImpact();
                 const att = realRainPct / 100;
                 const leoMbps = Math.max(25, MODEL.leoMaxMbps * (1 - Math.pow(att, 1.35) * 0.85));
-                const meshCap = state.meshNodes * 52.0;
+                const terrainFactor = Math.max(0.65, 1 - (geoImpact.meshDbLoss * 0.042));
+                const meshCap = state.meshNodes * 52.0 * terrainFactor;
                 const netMbps = Math.min(leoMbps, meshCap);
 
                 let thrUser = Math.min(MODEL.mirMbps, (netMbps / activeUsers) * 0.96);
                 thrUser = Math.max(0.45, thrUser);
 
                 const loadRatio = activeUsers / 40;
-                const rtt = Math.max(20, 24.5 + Math.pow(loadRatio, 1.7) * 8.5 + Math.pow(att, 1.5) * 34 + (4 - state.meshNodes) * 4.2);
-                const loss = Math.max(0.05, 0.12 + Math.pow(att, 1.9) * 3.8 + (4 - state.meshNodes) * 0.28 + (loadRatio > 0.9 ? 0.35 : 0));
-
-                const consWh = 100 + 15 + (state.meshNodes * 12) + (loadRatio * 7.5);
+                const rtt = Math.max(20, 24.5 + geoImpact.leoLatRttMs + Math.pow(loadRatio, 1.7) * 8.5 + Math.pow(att, 1.5) * 34 + (4 - state.meshNodes) * 4.2);
+                const loss = Math.max(0.05, 0.12 + geoImpact.geoLossPct + Math.pow(att, 1.9) * 3.8 + (4 - state.meshNodes) * 0.28 + (loadRatio > 0.9 ? 0.35 : 0));
                 const genWh = hasHourly
                     ? Math.max(0, MODEL.pvWp * (state.hourlyRealWeather[refHour].radWm2 / 1000) * MODEL.efficiency)
                     : Math.max(0, MODEL.pvWp * state.hsp * solarCurveFallback[refHour] * MODEL.efficiency);
+                const consWh = (115 + state.meshNodes * 12) * (1 + (loadRatio - 0.5) * 0.05);
 
                 batWh = Math.min(MODEL.batCapWh, Math.max(0, batWh + genWh - consWh));
                 const soc = (batWh / MODEL.batCapWh) * 100;
@@ -1812,9 +1865,10 @@
         // EXPORTACIÓN CSV Y GRABACIÓN DE PANTALLA (.WEBM)
         // =====================================================================
         function downloadCSV() {
-            const head = ['Hora','Origen_Clima','Ubicacion','Escenario','Usuarios','Nodos_Mesh','RainFade_Pct','HSP','LEO_Mbps','Throughput_Mbps','MIR_Teorico','CIR_Teorico','Desvio_MIR_Pct','RTT_ms','Perdida_Pct','Gen_FV_Wh','Consumo_Wh','Voltaje_24V','SoC_Pct'];
+            const head = ['Hora','Origen_Clima','Ubicacion','Bioma_Terreno','Escenario','Usuarios','Nodos_Mesh','RainFade_Pct','HSP','LEO_Mbps','Throughput_Mbps','MIR_Teorico','CIR_Teorico','Desvio_MIR_Pct','RTT_ms','Perdida_Pct','Gen_FV_Wh','Consumo_Wh','Voltaje_24V','SoC_Pct'];
             const locName = getActiveLocation().name.replace(/,/g, '');
-            const body = state.rows.map(r => [r.label, r.origin || state.dataOrigin, locName, state.scenario, r.users, `${state.meshNodes}/4`, r.rainVal ?? state.rainPct, r.hspVal ?? state.hsp, r.leo, r.thr, 5.0, 1.25, r.devMir, r.rtt, r.loss, r.gen, r.cons, r.volt, r.soc]);
+            const biomeLabel = getGeoConnectivityImpact().label;
+            const body = state.rows.map(r => [r.label, r.origin || state.dataOrigin, locName, biomeLabel, state.scenario, r.users, `${state.meshNodes}/4`, r.rainVal ?? state.rainPct, r.hspVal ?? state.hsp, r.leo, r.thr, 5.0, 1.25, r.devMir, r.rtt, r.loss, r.gen, r.cons, r.volt, r.soc]);
             const csv = '\uFEFF' + [head.join(','), ...body.map(e => e.join(','))].join('\n');
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
