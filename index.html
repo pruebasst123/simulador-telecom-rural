@@ -922,15 +922,75 @@
             syncRealWeather();
         }
 
+        /**
+         * Convierte coordenadas en formato Decimal o Sexagesimal (DMS) a grados decimales { lat, lon }.
+         * Soporta símbolos estándar/tipográficos (° ′ ' ″ " ” ’) y hemisferios en español/inglés (N, S, E, O, W).
+         */
+        function parseCoordinates(input) {
+            if (!input || typeof input !== 'string') return null;
+
+            // Normalizar comas decimales internas en números (ej. 32,5") sin afectar el separador entre lat y lon
+            const cleaned = input.trim().replace(/(\d),(\d)/g, '$1.$2');
+
+            // 1. Formato decimal puro (ej. "5.6922, -76.6581" o "5.6922 -76.6581")
+            const pureDec = cleaned.match(/^([+-]?\d+(?:\.\d+)?)\s*[,;\s]\s*([+-]?\d+(?:\.\d+)?)$/);
+            if (pureDec) {
+                const lat = parseFloat(pureDec[1]);
+                const lon = parseFloat(pureDec[2]);
+                if (!Number.isNaN(lat) && !Number.isNaN(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+                    return { lat, lon };
+                }
+                return null;
+            }
+
+            // 2. Formato DMS (Grados, Minutos, Segundos opcionales) o Decimal con hemisferio (N/S/E/O/W)
+            const partRegex = /([+-]?\d+(?:\.\d+)?)\s*°\s*(?:(\d+(?:\.\d+)?)\s*[′'’]\s*(?:(\d+(?:\.\d+)?)\s*[″"”]?\s*)?)?([NSEOWnseow])|([+-]?\d+(?:\.\d+)?)\s*°?\s*([NSEOWnseow])/g;
+            const matches = [...cleaned.matchAll(partRegex)];
+
+            if (matches.length === 2) {
+                let lat = null;
+                let lon = null;
+
+                for (const m of matches) {
+                    let deg = 0, min = 0, sec = 0, hemi = '';
+                    if (m[4]) {
+                        deg = parseFloat(m[1]);
+                        min = m[2] ? parseFloat(m[2]) : 0;
+                        sec = m[3] ? parseFloat(m[3]) : 0;
+                        hemi = m[4].toUpperCase();
+                    } else if (m[6]) {
+                        deg = parseFloat(m[5]);
+                        hemi = m[6].toUpperCase();
+                    }
+
+                    if (min >= 60 || sec >= 60 || Number.isNaN(deg)) return null;
+
+                    const sign = (hemi === 'S' || hemi === 'O' || hemi === 'W' || deg < 0) ? -1 : 1;
+                    const decimalVal = sign * (Math.abs(deg) + (min / 60) + (sec / 3600));
+
+                    if (hemi === 'N' || hemi === 'S') {
+                        lat = decimalVal;
+                    } else if (hemi === 'E' || hemi === 'O' || hemi === 'W') {
+                        lon = decimalVal;
+                    }
+                }
+
+                if (lat !== null && lon !== null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+                    return { lat, lon };
+                }
+            }
+
+            return null;
+        }
+
         async function searchGeoLocation() {
             const q = document.getElementById('inp-geo-search').value.trim();
             if (!q) return;
 
-            const decMatch = q.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
-            if (decMatch) {
-                const lat = parseFloat(decMatch[1]);
-                const lon = parseFloat(decMatch[2]);
-                setCustomGeoPoint(lat, lon, `Coord ${lat.toFixed(3)}, ${lon.toFixed(3)}`, true);
+            const parsedCoords = parseCoordinates(q);
+            if (parsedCoords) {
+                const { lat, lon } = parsedCoords;
+                setCustomGeoPoint(lat, lon, `Coord ${lat.toFixed(4)}, ${lon.toFixed(4)}`, true);
                 return;
             }
 
@@ -941,7 +1001,7 @@
                     const r = data.results[0];
                     setCustomGeoPoint(r.latitude, r.longitude, `${r.name}, ${r.admin1 || r.country_code}`, true);
                 } else {
-                    notify('Ubicación no encontrada. Pruebe con otro municipio o coordenadas lat,lon.', 'warn');
+                    notify('Ubicación no encontrada. Pruebe con otro municipio o coordenadas (ej: 5°41′32″ N, 76°39′29″ O o 5.6922, -76.6581).', 'warn');
                 }
             } catch (e) {
                 notify('Error consultando geocodificador.', 'warn');
